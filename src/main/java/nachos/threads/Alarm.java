@@ -2,11 +2,21 @@ package nachos.threads;
 
 import nachos.machine.*;
 
+import java.util.ArrayList;
+
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
  */
 public class Alarm {
+    //edited by abser
+    /*********************start******************/
+
+    private ArrayList<Long>timeList;
+    private ArrayList<KThread>threadList;
+
+    /*********************end*******************/
+
     /**
      * Allocate a new Alarm. Set the machine's timer interrupt handler to this
      * alarm's callback.
@@ -15,9 +25,15 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
-	Machine.timer().setInterruptHandler(new Runnable() {
-		public void run() { timerInterrupt(); }
-	    });
+
+        /****************start********************/
+        timeList=new ArrayList<>();
+        threadList=new ArrayList<>();
+        /****************end*********************/
+
+        Machine.timer().setInterruptHandler(new Runnable() {
+            public void run() { timerInterrupt(); }
+            });
     }
 
     /**
@@ -27,7 +43,25 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+
+        /*********************start*****************/
+        long current=Machine.timer().getTime();
+        boolean status=Machine.interrupt().disable();
+        int i;
+        for(i=0;i<timeList.size();i++){
+            if(timeList.get(i)<=current){
+                threadList.get(i).ready();
+            }else{
+                break;
+            }
+        }
+        for(int j=0;j<i;j++) {
+            threadList.remove(0);
+            timeList.remove(0);
+        }
+	    KThread.currentThread().yield();//provided line
+        Machine.interrupt().restore(status);
+        /*******************end******************/
     }
 
     /**
@@ -45,9 +79,23 @@ public class Alarm {
      * @see	nachos.machine.Timer#getTime()
      */
     public void waitUntil(long x) {
-	// for now, cheat just to get something working (busy waiting is bad)
-	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
+        // for now, cheat just to get something working (busy waiting is bad)
+        long wakeTime = Machine.timer().getTime() + x;
+        /**********************start****************/
+        KThread current=KThread.currentThread();
+        boolean status=Machine.interrupt().disable();
+        for (int i=timeList.size()-1;i>=0;i--){
+            if(timeList.get(i)<=wakeTime){
+                timeList.add(i,wakeTime);
+                threadList.add(i,current);
+                break;
+            }
+        }
+        current.sleep();
+        Machine.interrupt().restore(status);
+        /*********************end*****************/
+        /*while (wakeTime > Machine.timer().getTime())
+            KThread.yield();
+        */
     }
 }

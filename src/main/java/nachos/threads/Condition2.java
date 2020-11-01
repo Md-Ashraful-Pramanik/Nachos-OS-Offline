@@ -12,6 +12,7 @@ import nachos.machine.*;
  * @see	nachos.threads.Condition
  */
 public class Condition2 {
+    //edited by abser
     /**
      * Allocate a new condition variable.
      *
