@@ -13,7 +13,18 @@ public class Communicator {
     /**
      * Allocate a new communicator.
      */
+
+    Condition condition;
+    int word;
+    int speakerCount;
+    int listenerCount;
+    Lock lock;
+
     public Communicator() {
+        lock = new Lock();
+        this.condition = new Condition(lock);
+        speakerCount = 0;
+        listenerCount = 0;
     }
 
     /**
@@ -27,6 +38,16 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+        lock.acquire();
+        speakerCount++;
+        while (listenerCount == 0)
+            condition.sleep();
+
+        this.word = word;
+        System.out.println(KThread.currentThread().toString() + "spoke " + word);
+        condition.wake();
+        speakerCount--;
+        lock.release();
     }
 
     /**
@@ -34,8 +55,20 @@ public class Communicator {
      * the <i>word</i> that thread passed to <tt>speak()</tt>.
      *
      * @return	the integer transferred.
-     */    
+     */
     public int listen() {
-	return 0;
+        lock.acquire();
+        listenerCount++;
+        while (speakerCount == 0){
+            condition.sleep();
+        }
+
+        condition.wakeAll();
+        condition.sleep();
+        int word = this.word;
+        System.out.println(KThread.currentThread().toString() + "listen " + word);
+        listenerCount--;
+        lock.release();
+        return word;
     }
 }

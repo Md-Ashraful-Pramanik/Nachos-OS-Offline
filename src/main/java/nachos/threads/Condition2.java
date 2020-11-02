@@ -26,6 +26,7 @@ public class Condition2 {
     public Condition2(Lock conditionLock) {
         this.conditionLock = conditionLock;
         valueQueue=new LinkedList();
+
     }
 
     /**
@@ -36,6 +37,7 @@ public class Condition2 {
      */
     public void sleep() {
         Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+
 
         /*******************start************************/
         //V
@@ -53,6 +55,7 @@ public class Condition2 {
         Machine.interrupt().restore(status);
         conditionLock.acquire();//not by me
         /*******************end***************************/
+
     }
 
     /**
@@ -61,6 +64,7 @@ public class Condition2 {
      */
     public void wake() {
         Lib.assertTrue(conditionLock.isHeldByCurrentThread());
+
 
         /****************start***********************/
         //P
@@ -76,6 +80,7 @@ public class Condition2 {
         }
         Machine.interrupt().restore(status);
         /*************end*********************/
+
     }
 
     /**
@@ -85,11 +90,13 @@ public class Condition2 {
     public void wakeAll() {
         Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
+
         /*****************start***********************/
         while (!valueQueue.isEmpty()){
             wake();
         }
         /****************end*************************/
+
     }
 
     private int value;

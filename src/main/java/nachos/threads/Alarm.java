@@ -25,7 +25,6 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
-
         /****************start********************/
         timeList=new ArrayList<>();
         threadList=new ArrayList<>();
@@ -43,12 +42,14 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-
+        //System.out.println("In timer interrupt");
         /*********************start*****************/
         long current=Machine.timer().getTime();
         boolean status=Machine.interrupt().disable();
         int i;
         for(i=0;i<timeList.size();i++){
+            //System.out.println(current);
+            //System.out.println(timeList.get(i));
             if(timeList.get(i)<=current){
                 threadList.get(i).ready();
             }else{
@@ -84,13 +85,13 @@ public class Alarm {
         /**********************start****************/
         KThread current=KThread.currentThread();
         boolean status=Machine.interrupt().disable();
-        for (int i=timeList.size()-1;i>=0;i--){
-            if(timeList.get(i)<=wakeTime){
-                timeList.add(i,wakeTime);
-                threadList.add(i,current);
+        int i;
+        for (i = 0; i<timeList.size(); i++) {
+            if (timeList.get(i) >= wakeTime)
                 break;
-            }
         }
+        timeList.add(i, wakeTime);
+        threadList.add(i, current);
         current.sleep();
         Machine.interrupt().restore(status);
         /*********************end*****************/
