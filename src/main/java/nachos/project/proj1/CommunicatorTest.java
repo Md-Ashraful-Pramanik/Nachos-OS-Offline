@@ -8,6 +8,7 @@ import java.util.Random;
 public class CommunicatorTest implements TestInterface{
     public Communicator communicator = new Communicator();
     public Random random = new Random();
+    public int counter = 0;
 
     @Override
     public void startTesting() {
@@ -45,13 +46,15 @@ public class CommunicatorTest implements TestInterface{
             }
         }).setName("Speaker Thread 3");
 
-        listenerMethod();
+        //listenerMethod();
 
+
+        l1.fork();
         s1.fork();
         s2.fork();
-        s3.fork();
-        l1.fork();
+
         l2.fork();
+        s3.fork();
 
         KThread.yield();
 
@@ -71,10 +74,9 @@ public class CommunicatorTest implements TestInterface{
     }
 
     public void speakerMethod() {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
             KThread.yield();
-            random.setSeed(System.currentTimeMillis());
-            communicator.speak(random.nextInt(100));
+            communicator.speak(counter++);
             KThread.yield();
         }
     }
