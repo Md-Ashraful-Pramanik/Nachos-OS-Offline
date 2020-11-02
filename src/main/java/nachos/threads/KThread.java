@@ -222,7 +222,6 @@ public class KThread {
 
 		currentThread.ready();
 
-
 		runNextThread();
 
 		Machine.interrupt().restore(intStatus);

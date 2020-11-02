@@ -13,7 +13,17 @@ public class Communicator {
     /**
      * Allocate a new communicator.
      */
+
+    Condition condition;
+    int word;
+    int speakerCount;
+    int listenerCount;
+
     public Communicator() {
+        Condition condition = new Condition(new Lock());
+        this.condition = condition;
+        speakerCount = 0;
+        listenerCount = 0;
     }
 
     /**
@@ -27,6 +37,18 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+        boolean status=Machine.interrupt().disable();
+        speakerCount++;
+        Machine.interrupt().restore(status);
+        while (listenerCount == 0)
+            condition.sleep();
+
+        status=Machine.interrupt().disable();
+        this.word = word;
+        Lib.debug('t',KThread.currentThread().toString() + "spoke " + word);
+        condition.wake();
+        speakerCount--;
+        Machine.interrupt().restore(status);
     }
 
     /**
@@ -34,8 +56,21 @@ public class Communicator {
      * the <i>word</i> that thread passed to <tt>speak()</tt>.
      *
      * @return	the integer transferred.
-     */    
+     */
     public int listen() {
-	return 0;
+        boolean status=Machine.interrupt().disable();
+        listenerCount++;
+        Machine.interrupt().restore(status);
+        while (speakerCount == 0)
+            condition.sleep();
+
+        condition.wakeAll();
+        condition.sleep();
+        status=Machine.interrupt().disable();
+        int word = this.word;
+        Lib.debug('t',KThread.currentThread().toString() + "listen " + word);
+        listenerCount--;
+        Machine.interrupt().restore(status);
+        return word;
     }
 }

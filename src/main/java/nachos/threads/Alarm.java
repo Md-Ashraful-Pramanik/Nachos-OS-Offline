@@ -25,7 +25,6 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
-
         /****************start********************/
         timeList=new ArrayList<>();
         threadList=new ArrayList<>();
