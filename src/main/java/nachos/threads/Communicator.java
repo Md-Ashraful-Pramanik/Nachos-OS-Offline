@@ -14,17 +14,19 @@ public class Communicator {
      * Allocate a new communicator.
      */
 
-    Condition condition;
+    Condition speakerCondition;
+    Condition listenerCondition;
     int word;
-    int speakerCount;
-    int listenerCount;
+    boolean speakerExist;
+    boolean listenerExist;
     Lock lock;
 
     public Communicator() {
         lock = new Lock();
-        this.condition = new Condition(lock);
-        speakerCount = 0;
-        listenerCount = 0;
+        this.speakerCondition = new Condition(lock);
+        this.listenerCondition = new Condition(lock);
+        speakerExist = false;
+        listenerExist = false;
     }
 
     /**
@@ -39,14 +41,19 @@ public class Communicator {
      */
     public void speak(int word) {
         lock.acquire();
-        speakerCount++;
-        while (listenerCount == 0)
-            condition.sleep();
+
+        while (speakerExist)
+            speakerCondition.sleep();
+        speakerExist = true;
+
+        while (!listenerExist)
+            speakerCondition.sleep();
 
         this.word = word;
-        System.out.println(KThread.currentThread().toString() + "spoke " + word);
-        condition.wake();
-        speakerCount--;
+        System.out.println(KThread.currentThread().toString() + " spoke " + word);
+        listenerCondition.wake();
+        speakerExist = false;
+
         lock.release();
     }
 
@@ -58,17 +65,23 @@ public class Communicator {
      */
     public int listen() {
         lock.acquire();
-        listenerCount++;
-        while (speakerCount == 0){
-            condition.sleep();
-        }
 
-        condition.wakeAll();
-        condition.sleep();
+        while (listenerExist)
+            listenerCondition.sleep();
+        listenerExist = true;
+
+        while (!speakerExist)
+            listenerCondition.sleep();
+
+        speakerCondition.wake();
+        listenerCondition.sleep();
+
         int word = this.word;
-        System.out.println(KThread.currentThread().toString() + "listen " + word);
-        listenerCount--;
+        System.out.println(KThread.currentThread().toString() + " listen " + word);
+
+        listenerExist = false;
         lock.release();
+
         return word;
     }
 }
