@@ -41,19 +41,31 @@ public class Communicator {
      */
     public void speak(int word) {
         lock.acquire();
+        //String threadName = KThread.currentThread().toString();
+        //System.out.println(threadName+" Enter speaking");
 
-        while (speakerExist)
+        while (speakerExist){
+            //System.out.println(threadName+" Block by other speaker");
             speakerCondition.sleep();
+            //System.out.println("SpeakerExist: " + speakerExist);
+        }
+
         speakerExist = true;
 
-        while (!listenerExist)
+        if (!listenerExist){
+            //System.out.println(threadName+" Block by no listener");
             speakerCondition.sleep();
-
+        }
+        
         this.word = word;
         System.out.println(KThread.currentThread().toString() + " spoke " + word);
-        listenerCondition.wake();
-        speakerExist = false;
+        listenerCondition.wakeAll();
 
+        //System.out.println(threadName + " Wait for end listening");
+        speakerCondition.sleep();
+        //System.out.println(threadName + " End speaking");
+        speakerExist = false;
+        speakerCondition.wake();
         lock.release();
     }
 
@@ -66,22 +78,33 @@ public class Communicator {
     public int listen() {
         lock.acquire();
 
-        while (listenerExist)
+        //String threadName = KThread.currentThread().toString();
+        //System.out.println(threadName+" Enter listening");
+
+        while (listenerExist){
+            //System.out.println(threadName+" Block by other listener");
             listenerCondition.sleep();
+        }
+
         listenerExist = true;
 
-        while (!speakerExist)
-            listenerCondition.sleep();
+        if (!speakerExist) {
+            //System.out.println(threadName + " Block no speaker");
+        }
+        else {
+            speakerCondition.wakeAll();
+            //System.out.println(threadName + " waiting for speaking");
+        }
 
-        speakerCondition.wake();
         listenerCondition.sleep();
 
         int word = this.word;
         System.out.println(KThread.currentThread().toString() + " listen " + word);
 
         listenerExist = false;
+        speakerCondition.wakeAll();
+        listenerCondition.wake();
         lock.release();
-
         return word;
     }
 }
