@@ -18,10 +18,11 @@ public class Communicator {
     int word;
     int speakerCount;
     int listenerCount;
+    Lock lock;
 
     public Communicator() {
-        Condition condition = new Condition(new Lock());
-        this.condition = condition;
+        lock = new Lock();
+        this.condition = new Condition(lock);
         speakerCount = 0;
         listenerCount = 0;
     }
@@ -37,18 +38,16 @@ public class Communicator {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
-        boolean status=Machine.interrupt().disable();
+        lock.acquire();
         speakerCount++;
-        Machine.interrupt().restore(status);
         while (listenerCount == 0)
             condition.sleep();
 
-        status=Machine.interrupt().disable();
         this.word = word;
-        Lib.debug('t',KThread.currentThread().toString() + "spoke " + word);
+        System.out.println(KThread.currentThread().toString() + "spoke " + word);
         condition.wake();
         speakerCount--;
-        Machine.interrupt().restore(status);
+        lock.release();
     }
 
     /**
@@ -58,19 +57,18 @@ public class Communicator {
      * @return	the integer transferred.
      */
     public int listen() {
-        boolean status=Machine.interrupt().disable();
+        lock.acquire();
         listenerCount++;
-        Machine.interrupt().restore(status);
-        while (speakerCount == 0)
+        while (speakerCount == 0){
             condition.sleep();
+        }
 
         condition.wakeAll();
         condition.sleep();
-        status=Machine.interrupt().disable();
         int word = this.word;
-        Lib.debug('t',KThread.currentThread().toString() + "listen " + word);
+        System.out.println(KThread.currentThread().toString() + "listen " + word);
         listenerCount--;
-        Machine.interrupt().restore(status);
+        lock.release();
         return word;
     }
 }

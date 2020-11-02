@@ -1,6 +1,7 @@
 package nachos.threads;
 
 import nachos.machine.*;
+import nachos.project.proj1.Test;
 
 /**
  * A KThread is a thread that can be used to execute Nachos kernel code. Nachos
@@ -194,6 +195,8 @@ public class KThread {
 
 		currentThread.status = statusFinished;
 
+		if (currentThread.joinThread != null)
+			currentThread.joinThread.ready();
 		sleep();
 	}
 
@@ -277,6 +280,16 @@ public class KThread {
 
 		Lib.assertTrue(this != currentThread);
 
+		if (this.status == statusFinished)
+			return;
+
+		if(joinThread == null){
+			joinThread = currentThread;
+
+			boolean status = Machine.interrupt().disable();
+			sleep();
+			Machine.interrupt().restore(status);
+		}
 	}
 
 	/**
@@ -392,6 +405,7 @@ public class KThread {
 						+ i + " times");
 				currentThread.yield();
 			}
+
 		}
 
 		private int which;
@@ -401,10 +415,12 @@ public class KThread {
 	 * Tests whether this module is working.
 	 */
 	public static void selfTest() {
-		Lib.debug(dbgThread, "Enter KThread.selfTest");
-
-		new KThread(new PingTest(1)).setName("forked thread").fork();
-		new PingTest(0).run();
+		Test.runTest();
+//
+//		Lib.debug(dbgThread, "Enter KThread.selfTest");
+//
+//		new KThread(new PingTest(1)).setName("forked thread").fork();
+//		new PingTest(0).run();
 	}
 
 	private static final char dbgThread = 't';
@@ -412,7 +428,7 @@ public class KThread {
 	/**
 	 * Additional state used by schedulers.
 	 *
-	 * @see	nachos.threads.PriorityScheduler.ThreadState
+	 * @see	PriorityScheduler.ThreadState
 	 */
 	public Object schedulingState = null;
 
@@ -444,4 +460,6 @@ public class KThread {
 	private static KThread currentThread = null;
 	private static KThread toBeDestroyed = null;
 	private static KThread idleThread = null;
+
+	private KThread joinThread = null;
 }

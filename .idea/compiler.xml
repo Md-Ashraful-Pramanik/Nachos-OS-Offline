@@ -7,7 +7,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="nachos" options="-Xlint" />
       <module name="nachos.main" options="-Xlint" />
-      <module name="nachos.test" options="" />
+      <module name="nachos.test" options="-Xlint" />
     </option>
   </component>
 </project>

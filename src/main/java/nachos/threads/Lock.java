@@ -70,6 +70,7 @@ public class Lock {
 	 * @return	true if the current thread holds this lock.
 	 */
 	public boolean isHeldByCurrentThread() {
+		//System.out.println(lockHolder);
 		return (lockHolder == KThread.currentThread());
 	}
 

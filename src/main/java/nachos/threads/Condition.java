@@ -73,7 +73,7 @@ public class Condition {
      * <p>
      * This implementation uses semaphores to implement this, by allocating a
      * semaphore for each waiting thread. The waker will <tt>V()</tt> this
-     * semaphore, so thre is no chance the sleeper will miss the wake-up, even
+     * semaphore, so there is no chance the sleeper will miss the wake-up, even
      * though the lock is released before calling <tt>P()</tt>.
      */
     public void sleep() {
