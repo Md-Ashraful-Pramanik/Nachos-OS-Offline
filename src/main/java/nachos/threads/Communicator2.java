@@ -16,10 +16,14 @@ public class Communicator2 {
     int word;
     Condition speakerCondition;
     Condition listenerCondition;
+    Lock speakerLock;
+    Lock listenerLock;
 
     public Communicator2() {
-        this.speakerCondition = new Condition(new Lock());
-        this.listenerCondition = new Condition(new Lock());
+        this.speakerLock = new Lock();
+        this.speakerCondition = new Condition(speakerLock);
+        this.listenerLock = new Lock();
+        this.listenerCondition = new Condition(listenerLock);
     }
 
     /**
@@ -33,12 +37,19 @@ public class Communicator2 {
      * @param	word	the integer to transfer.
      */
     public void speak(int word) {
+        listenerLock.acquire();
         listenerCondition.wake();
+        listenerLock.release();
+
+        speakerLock.acquire();
         speakerCondition.sleep();
-        boolean status= Machine.interrupt().disable();
         this.word = word;
+
+        listenerLock.acquire();
         listenerCondition.wake();
-        Machine.interrupt().restore(status);
+        listenerLock.release();
+
+        speakerLock.release();
     }
 
     /**
@@ -48,11 +59,15 @@ public class Communicator2 {
      * @return	the integer transferred.
      */
     public int listen() {
+        speakerLock.acquire();
         speakerCondition.wake();
+        speakerLock.release();
+
+        listenerLock.acquire();
         listenerCondition.sleep();
-        boolean status=Machine.interrupt().disable();
         int word = this.word;
-        Machine.interrupt().restore(status);
+        listenerLock.release();
+
         return word;
     }
 }

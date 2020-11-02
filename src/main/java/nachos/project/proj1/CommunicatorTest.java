@@ -45,11 +45,15 @@ public class CommunicatorTest implements TestInterface{
             }
         }).setName("Speaker Thread 3");
 
-        l1.fork();
-        l2.fork();
+        listenerMethod();
+
         s1.fork();
         s2.fork();
         s3.fork();
+        l1.fork();
+        l2.fork();
+
+        KThread.yield();
 
         l1.join();
         l2.join();
@@ -69,6 +73,7 @@ public class CommunicatorTest implements TestInterface{
     public void speakerMethod() {
         for (int i = 0; i < 3; i++) {
             KThread.yield();
+            random.setSeed(System.currentTimeMillis());
             communicator.speak(random.nextInt(100));
             KThread.yield();
         }
