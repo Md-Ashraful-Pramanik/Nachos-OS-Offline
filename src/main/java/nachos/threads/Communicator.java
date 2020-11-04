@@ -14,8 +14,8 @@ public class Communicator {
      * Allocate a new communicator.
      */
 
-    Condition speakerCondition;
-    Condition listenerCondition;
+    Condition2 speakerCondition;
+    Condition2 listenerCondition;
     int word;
     boolean speakerExist;
     boolean listenerExist;
@@ -23,8 +23,8 @@ public class Communicator {
 
     public Communicator() {
         lock = new Lock();
-        this.speakerCondition = new Condition(lock);
-        this.listenerCondition = new Condition(lock);
+        this.speakerCondition = new Condition2(lock);
+        this.listenerCondition = new Condition2(lock);
         speakerExist = false;
         listenerExist = false;
     }
