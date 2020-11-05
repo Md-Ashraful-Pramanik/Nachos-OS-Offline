@@ -346,7 +346,29 @@ public class UserProcess {
 		return 0;
 	}
 
+	/***********************start*************************/
+	//fileDescriptor=0 standard input
+	//fileDescriptor=1 standard output
+	private int handleRead(int fileDescriptor, int bufferAddress, int count) {
+		if(fileDescriptor!=0 || count<0)
+			return -1;
+		OpenFile openFile=UserKernel.console.openForReading();
+		byte buffer[]=new byte[count];
+		int i=openFile.read(buffer,0,count);
+		int j=writeVirtualMemory(bufferAddress,buffer,0,i);
+		return j;
+	}
 
+	private int handleWrite(int fileDescriptor, int bufferAddress, int count) {
+		if(fileDescriptor!=1 || count<0)
+			return -1;
+		OpenFile openFile=UserKernel.console.openForWriting();
+		byte buffer[]=new byte[count];
+		int i=readVirtualMemory(bufferAddress,buffer,0,count);
+		int j=openFile.write(buffer,0,i);
+		return j;
+	}
+	/**************************end***********************/
 	private static final int
 			syscallHalt = 0,
 			syscallExit = 1,
@@ -391,8 +413,13 @@ public class UserProcess {
 		switch (syscall) {
 			case syscallHalt:
 				return handleHalt();
+			/*************start***************/
+			case syscallRead:
+				return handleRead(a0,a1,a2);
 
-
+			case syscallWrite:
+				return handleWrite(a0,a1,a2);
+			/************end****************/
 			default:
 				Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 				Lib.assertNotReached("Unknown system call!");
