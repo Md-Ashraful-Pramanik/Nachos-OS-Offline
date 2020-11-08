@@ -1,10 +1,4 @@
-package nachos.project.proj1;
-
-import nachos.threads.Alarm;
-import nachos.threads.Communicator;
-import nachos.threads.KThread;
-
-import java.util.Random;
+package nachos.proj1;
 
 public class Test {
     public static void runTest() {

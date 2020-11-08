@@ -1,4 +1,4 @@
-package nachos.project.proj1;
+package nachos.proj1;
 
 import nachos.threads.*;
 import nachos.machine.*;

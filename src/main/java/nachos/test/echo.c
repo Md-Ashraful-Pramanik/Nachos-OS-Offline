@@ -8,10 +8,11 @@ int main(int argc, char** argv)
     char buf[30];
    
     printf("Hello world\n");
-   
+    //readline(buf,10);
     printf("Enter a number: ");
     readline(buf, 10);
     num = atoi(buf);
+    printf("number is %d\n",num);
     for(i = 0; i < num; i++) {
         for(j = 0; j < i; j++) {
             printf("*");
@@ -42,12 +43,12 @@ int main(int argc, char** argv)
     printf("Return on invallid size: %d\n", num);
     printf("------------END CHECKING INVALID WRITE CALLS--------------\n");
    
-    printf("\n------------CHECKING INVALID JOIN CALLS--------------\n");
+    /*printf("\n------------CHECKING INVALID JOIN CALLS--------------\n");
     num = join(2, &num);
     printf("Return for join on pid 2 : %d\n", num);
     num = join(3, &num);
     printf("Return for join on pid 3 : %d\n", num);
-    printf("\n------------END CHECKING INVALID JOIN CALLS--------------\n");
+    printf("\n------------END CHECKING INVALID JOIN CALLS--------------\n");*/
     
     halt();
    

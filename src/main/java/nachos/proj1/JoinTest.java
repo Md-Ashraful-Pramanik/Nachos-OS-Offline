@@ -1,6 +1,5 @@
-package nachos.project.proj1;
+package nachos.proj1;
 
-import nachos.threads.Alarm;
 import nachos.threads.KThread;
 
 public class JoinTest implements TestInterface{
