@@ -26,9 +26,7 @@ public class UserProcess {
 	public int maximumVirtualMemorySize;
 	public boolean isPageAllocated = false;
 
-	public UserProcess() {
-
-	}
+	public UserProcess() {}
 
 	/**
 	 * Allocate and return a new process of the correct class. The class name
@@ -299,7 +297,6 @@ public class UserProcess {
 	protected boolean loadSections() {
 		/*********Start (Ashraful)*****************/
 		allocatePages();
-		maximumVirtualMemorySize = 0;
 		if (!isPageAllocated) {
 			coff.close();
 			Lib.debug(dbgProcess, "\tinsufficient physical memory");
@@ -326,7 +323,6 @@ public class UserProcess {
 				if(section.isReadOnly())
 					pageTable[vpn].readOnly = true;
 
-				maximumVirtualMemorySize = vpn * pageSize + pageSize;
 				/*********End (Ashraful)*****************/
 			}
 		}
@@ -343,6 +339,7 @@ public class UserProcess {
 					pageTable[i] = new TranslationEntry(i,
 							UserKernel.freePages.pollFirst(), true, false, false, false);
 				}
+				maximumVirtualMemorySize = pageTable.length*pageSize;
 				isPageAllocated = true;
 			}
 		}
@@ -392,24 +389,23 @@ public class UserProcess {
 	/***********************start*************************/
 	//fileDescriptor=0 standard input
 	//fileDescriptor=1 standard output
-	private int handleRead(int fileDescriptor, int bufferAddress, int count) {
+	public int handleRead(int fileDescriptor, int bufferAddress, int count) {
 		if(fileDescriptor!=0 || count<0)
 			return -1;
 		OpenFile openFile=UserKernel.console.openForReading();
-		byte buffer[]=new byte[count];
-		int i=openFile.read(buffer,0,count);
-		int j=writeVirtualMemory(bufferAddress,buffer,0,i);
-		return j;
+		byte[] data=new byte[count];
+		int length=openFile.read(data,0,count);
+		int writeAmount=writeVirtualMemory(bufferAddress,data,0,length);
+		return writeAmount;
 	}
 
-	private int handleWrite(int fileDescriptor, int bufferAddress, int count) {
+	public int handleWrite(int fileDescriptor, int bufferAddress, int count) {
 		if(fileDescriptor!=1 || count<0)
 			return -1;
 		OpenFile openFile=UserKernel.console.openForWriting();
-		byte buffer[]=new byte[count];
-		int i=readVirtualMemory(bufferAddress,buffer,0,count);
-		int j=openFile.write(buffer,0,i);
-		return j;
+		byte[] data=new byte[count];
+		int length=readVirtualMemory(bufferAddress,data,0,count);
+		return openFile.write(data,0,length);
 	}
 	/**************************end***********************/
 	private static final int

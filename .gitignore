@@ -4,5 +4,4 @@ gradlew
 build.gradle
 gradlew.bat
 settings.gradle
-*.coff
-*.o
+build
