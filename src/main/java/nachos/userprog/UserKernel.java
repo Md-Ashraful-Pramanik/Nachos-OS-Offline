@@ -4,15 +4,26 @@ import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
 
+import java.util.LinkedList;
+
 /**
  * A kernel that can support multiple user processes.
  */
 public class UserKernel extends ThreadedKernel {
+	public static LinkedList<Integer> freePages;
 	/**
 	 * Allocate a new user kernel.
 	 */
 	public UserKernel() {
 		super();
+		initFreePageList();
+	}
+
+	public void initFreePageList() {
+		freePages = new LinkedList<>();
+		for (int i = 0; i < Machine.processor().getNumPhysPages(); i++) {
+			freePages.add(i);
+		}
 	}
 
 	/**
