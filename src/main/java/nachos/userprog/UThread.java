@@ -25,6 +25,7 @@ public class UThread extends KThread {
 	}
 
 	private void runProgram() {
+		System.out.println("INSIDE RUN PROGRAM");
 		process.initRegisters();
 		process.restoreState();
 

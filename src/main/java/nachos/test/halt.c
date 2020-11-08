@@ -18,7 +18,11 @@ int main()
     printf("halt prints a line.\n");
     printf("halt prints another line.\n");
     printf("halt tries to halt Nachos\n");
+    int processId;
+    char *execArgs[256];
+    processId = exec("demo.coff",0,execArgs);
     halt();
+
     printf("Nachos not halted!\n");
     return 0;
     /* not reached */

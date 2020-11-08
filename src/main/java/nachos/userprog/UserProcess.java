@@ -50,6 +50,7 @@ public class UserProcess {
 	 * @return	<tt>true</tt> if the program was successfully executed.
 	 */
 	public boolean execute(String name, String[] args) {
+
 		if (!load(name, args))
 			return false;
 
@@ -411,6 +412,29 @@ public class UserProcess {
 		int j=openFile.write(buffer,0,i);
 		return j;
 	}
+
+	private int handleExec(int a0, int a1, int a2){
+		/*********Start (Mahathir)*****************/
+		String programName = readVirtualMemoryString(a0,20);
+		System.out.println(programName);
+		System.out.println(a1);
+
+		String[] a = {};
+
+		UserProcess process = newUserProcess();
+
+
+
+		Lib.assertTrue(process.execute("demo.coff", new String[] { }));
+
+
+		//userProcess.execute(programName,a);
+
+
+
+		return 0;
+		/*********End (Mahathir)*****************/
+	}
 	/**************************end***********************/
 	private static final int
 			syscallHalt = 0,
@@ -462,6 +486,9 @@ public class UserProcess {
 
 			case syscallWrite:
 				return handleWrite(a0,a1,a2);
+
+			case syscallExec:
+				return handleExec(a0,a1,a2);
 			/************end****************/
 			default:
 				Lib.debug(dbgProcess, "Unknown syscall " + syscall);
