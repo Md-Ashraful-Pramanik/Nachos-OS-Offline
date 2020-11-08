@@ -4,6 +4,7 @@ import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
 
+import java.awt.print.Pageable;
 import java.io.EOFException;
 
 /**
@@ -22,11 +23,11 @@ public class UserProcess {
 	/**
 	 * Allocate a new process.
 	 */
+	public int maximumVirtualMemorySize;
+	public boolean isPageAllocated = false;
+
 	public UserProcess() {
-		int numPhysPages = Machine.processor().getNumPhysPages();
-		pageTable = new TranslationEntry[numPhysPages];
-		for (int i=0; i<numPhysPages; i++)
-			pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
+
 	}
 
 	/**
@@ -134,12 +135,17 @@ public class UserProcess {
 		byte[] memory = Machine.processor().getMemory();
 
 		// for now, just assume that virtual addresses equal physical addresses
-		if (vaddr < 0 || vaddr >= memory.length)
+		/*********Start (Ashraful)*****************/
+		if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
 			return 0;
 
-		int amount = Math.min(length, memory.length-vaddr);
-		System.arraycopy(memory, vaddr, data, offset, amount);
+		int vpn = Processor.pageFromAddress(vaddr);
+		int pageOffset = Processor.offsetFromAddress(vaddr);
+		int physicalAddr = Processor.makeAddress(pageTable[vpn].ppn, pageOffset);
 
+		int amount = Math.min(length, maximumVirtualMemorySize-vaddr);
+		System.arraycopy(memory, physicalAddr, data, offset, amount);
+		/*********End (Ashraful)*****************/
 		return amount;
 	}
 
@@ -177,12 +183,21 @@ public class UserProcess {
 		byte[] memory = Machine.processor().getMemory();
 
 		// for now, just assume that virtual addresses equal physical addresses
-		if (vaddr < 0 || vaddr >= memory.length)
+		/*********Start (Ashraful)*****************/
+		if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
 			return 0;
 
-		int amount = Math.min(length, memory.length-vaddr);
-		System.arraycopy(data, offset, memory, vaddr, amount);
+		int vpn = Processor.pageFromAddress(vaddr);
+		int pageOffset = Processor.offsetFromAddress(vaddr);
+		if(pageTable[vpn].readOnly)
+			return 0;
+		int physicalAddr = Processor.makeAddress(pageTable[vpn].ppn, pageOffset);
 
+		int amount = Math.min(length, maximumVirtualMemorySize-vaddr);
+		System.arraycopy(data, offset, memory, physicalAddr, amount);
+
+		pageTable[vpn].dirty = true;
+		/*********End (Ashraful)*****************/
 		return amount;
 	}
 
@@ -282,11 +297,15 @@ public class UserProcess {
 	 * @return	<tt>true</tt> if the sections were successfully loaded.
 	 */
 	protected boolean loadSections() {
-		if (numPages > Machine.processor().getNumPhysPages()) {
+		/*********Start (Ashraful)*****************/
+		allocatePages();
+		maximumVirtualMemorySize = 0;
+		if (!isPageAllocated) {
 			coff.close();
 			Lib.debug(dbgProcess, "\tinsufficient physical memory");
 			return false;
 		}
+		/*********End (Ashraful)*****************/
 
 		// load sections
 		for (int s=0; s<coff.getNumSections(); s++) {
@@ -299,11 +318,35 @@ public class UserProcess {
 				int vpn = section.getFirstVPN()+i;
 
 				// for now, just assume virtual addresses=physical addresses
-				section.loadPage(i, vpn);
+				/*********Start (Ashraful)*****************/
+				if(vpn > pageTable.length)
+					return false;
+
+				section.loadPage(i, pageTable[vpn].ppn);
+				if(section.isReadOnly())
+					pageTable[vpn].readOnly = true;
+
+				maximumVirtualMemorySize = vpn * pageSize + pageSize;
+				/*********End (Ashraful)*****************/
 			}
 		}
 
 		return true;
+	}
+
+	public void allocatePages(){
+		/*********Start (Ashraful)*****************/
+		pageTable = new TranslationEntry[numPages];
+		synchronized (UserKernel.freePages){
+			if(UserKernel.freePages.size()>pageTable.length){
+				for (int i=0; i<pageTable.length; i++) {
+					pageTable[i] = new TranslationEntry(i,
+							UserKernel.freePages.pollFirst(), true, false, false, false);
+				}
+				isPageAllocated = true;
+			}
+		}
+		/*********End (Ashraful)*****************/
 	}
 
 	/**
@@ -451,6 +494,7 @@ public class UserProcess {
 				break;
 
 			default:
+				//System.out.println("Unexpected exception: " + Processor.exceptionNames[cause]);
 				Lib.debug(dbgProcess, "Unexpected exception: " +
 						Processor.exceptionNames[cause]);
 				Lib.assertNotReached("Unexpected exception");
