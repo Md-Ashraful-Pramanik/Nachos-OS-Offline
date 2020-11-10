@@ -18,16 +18,17 @@ int main()
     printf("halt prints a line.\n");
     printf("halt prints another line.\n");
 
-    int processId;
-    char *execArgs[256];
-    processId = exec("demo.coff",0,execArgs);
-    int i=0;
-    int j=0;
-    for(i=0;i<10000;i++){
-           j+=i;
-    }
-    printf("%d",j);
-    printf("halt tries to halt Nachos\n");
+//    int processId;
+//    char execArgs[3][10]={"test","hello","google"};
+//    processId = exec("demo.coff",3,execArgs);
+//
+//
+//    printf("Process Id: %d\n",processId);
+//    int status1;
+//    int k = join(processId, &status1);
+//
+//    printf("halt tries to halt Nachos\n");
+//    accept(0);
     halt();
 
     printf("Nachos not halted!\n");

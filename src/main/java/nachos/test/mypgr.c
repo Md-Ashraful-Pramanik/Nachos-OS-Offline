@@ -18,7 +18,13 @@ void main()
     readline(b, 10);
     char *execArgs[256];
     int status1,processID, processID1, processID2, status2;
-    
+
+    printf("\n********* checking 0/0 exception *********\n");
+    exec("error.coff",0,execArgs);
+
+    //printf("********* checking invalid syscall *********");
+    //accept(0);
+
     printf("\n\n********************************** mypgr Program Loading-test **********************************\n\n");
     printf("mypgr forking echo.coff and joining... \n");
     processID = exec("echo.coff", 1,  execArgs);
@@ -37,7 +43,8 @@ void main()
     //int m = join(processID, &status2);
     printf("*********   Join On Process %d Finished\nStatus Value:  %d   ***************\n", processID1, status1);
     //printf("*********   Join On Process %d Finished\nStatus Value:  %d   ***************\n", processID2, status2);
-    
-    halt();
+
+
+//    halt();
     /* not reached */
 }

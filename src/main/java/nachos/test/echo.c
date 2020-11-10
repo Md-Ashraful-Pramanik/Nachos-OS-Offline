@@ -7,7 +7,7 @@ int main(int argc, char** argv)
    
     char buf[30];
    
-    printf("Hello world\n");
+    printf("---------------INSIDE ECHO---------------\n");
     //readline(buf,10);
     printf("Enter a number: ");
     readline(buf, 10);
@@ -43,16 +43,18 @@ int main(int argc, char** argv)
     printf("Return on invallid size: %d\n", num);
     printf("------------END CHECKING INVALID WRITE CALLS--------------\n");
    
-    /*printf("\n------------CHECKING INVALID JOIN CALLS--------------\n");
+    printf("\n------------CHECKING INVALID JOIN CALLS--------------\n");
     num = join(2, &num);
     printf("Return for join on pid 2 : %d\n", num);
     num = join(3, &num);
     printf("Return for join on pid 3 : %d\n", num);
-    printf("\n------------END CHECKING INVALID JOIN CALLS--------------\n");*/
-    
+    printf("\n------------END CHECKING INVALID JOIN CALLS--------------\n");
+
+    printf("\n-------------TRY TO HALT IN ECHO-------------------------\n");
     halt();
+
    
-    printf("Halt is not working!!\n");
+    printf("\n-------------IN ECHO NOT HALTING-------------------------\n");
    
     return 0;
 }

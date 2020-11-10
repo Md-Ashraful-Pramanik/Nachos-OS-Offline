@@ -287,9 +287,8 @@ public class KThread {
 			return;
 
 		if(joinThread == null){
-			joinThread = currentThread;
-
 			boolean status = Machine.interrupt().disable();
+			joinThread = currentThread;
 			sleep();
 			Machine.interrupt().restore(status);
 		}
