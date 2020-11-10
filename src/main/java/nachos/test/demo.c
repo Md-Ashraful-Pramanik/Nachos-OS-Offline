@@ -21,6 +21,6 @@ int main()
     printf("Inside demo");
     //exit(0);
     //printf("Nachos not halted!\n");
-    //return 0;
+    return 0;
     /* not reached */
 }

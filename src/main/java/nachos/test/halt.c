@@ -17,10 +17,17 @@ int main()
     printf("halt started!\n");
     printf("halt prints a line.\n");
     printf("halt prints another line.\n");
-    printf("halt tries to halt Nachos\n");
+
     int processId;
     char *execArgs[256];
     processId = exec("demo.coff",0,execArgs);
+    int i=0;
+    int j=0;
+    for(i=0;i<10000;i++){
+           j+=i;
+    }
+    printf("%d",j);
+    printf("halt tries to halt Nachos\n");
     halt();
 
     printf("Nachos not halted!\n");

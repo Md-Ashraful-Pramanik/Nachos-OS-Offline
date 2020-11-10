@@ -53,7 +53,6 @@ public class UserProcess {
 
 		if (!load(name, args))
 			return false;
-
 		new UThread(this).setName(name).fork();
 
 		return true;
@@ -415,21 +414,20 @@ public class UserProcess {
 
 	private int handleExec(int a0, int a1, int a2){
 		/*********Start (Mahathir)*****************/
-		String programName = readVirtualMemoryString(a0,20);
+		String programName = readVirtualMemoryString(a0,1024);
 		System.out.println(programName);
-		System.out.println(a1);
-
+		System.out.println("a0:"+a0);
+		System.out.println("a1:"+a1);
+		System.out.println("a2:"+a2);
 		String[] a = {};
 
 		UserProcess process = newUserProcess();
 
+		process.execute(programName, new String[] { });
 
-
-		Lib.assertTrue(process.execute("demo.coff", new String[] { }));
-
+//		Lib.assertTrue();
 
 		//userProcess.execute(programName,a);
-
 
 
 		return 0;
@@ -489,6 +487,9 @@ public class UserProcess {
 
 			case syscallExec:
 				return handleExec(a0,a1,a2);
+			case syscallExit:
+				System.out.println("inside exit system call");
+				return 0;
 			/************end****************/
 			default:
 				Lib.debug(dbgProcess, "Unknown syscall " + syscall);
