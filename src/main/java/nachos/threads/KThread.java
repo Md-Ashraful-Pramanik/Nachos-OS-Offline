@@ -138,6 +138,7 @@ public class KThread {
 	 * its target's <tt>run</tt> method).
 	 */
 	public void fork() {
+
 		Lib.assertTrue(status == statusNew);
 		Lib.assertTrue(target != null);
 
@@ -155,6 +156,7 @@ public class KThread {
 		ready();
 
 		Machine.interrupt().restore(intStatus);
+
 	}
 
 	private void runThread() {

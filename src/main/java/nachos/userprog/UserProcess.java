@@ -48,9 +48,9 @@ public class UserProcess {
 	 * @return	<tt>true</tt> if the program was successfully executed.
 	 */
 	public boolean execute(String name, String[] args) {
+
 		if (!load(name, args))
 			return false;
-
 		new UThread(this).setName(name).fork();
 
 		return true;
@@ -407,6 +407,28 @@ public class UserProcess {
 		int length=readVirtualMemory(bufferAddress,data,0,count);
 		return openFile.write(data,0,length);
 	}
+
+	private int handleExec(int a0, int a1, int a2){
+		/*********Start (Mahathir)*****************/
+		String programName = readVirtualMemoryString(a0,1024);
+		System.out.println(programName);
+		System.out.println("a0:"+a0);
+		System.out.println("a1:"+a1);
+		System.out.println("a2:"+a2);
+		String[] a = {};
+
+		UserProcess process = newUserProcess();
+
+		process.execute(programName, new String[] { });
+
+//		Lib.assertTrue();
+
+		//userProcess.execute(programName,a);
+
+
+		return 0;
+		/*********End (Mahathir)*****************/
+	}
 	/**************************end***********************/
 	private static final int
 			syscallHalt = 0,
@@ -458,6 +480,12 @@ public class UserProcess {
 
 			case syscallWrite:
 				return handleWrite(a0,a1,a2);
+
+			case syscallExec:
+				return handleExec(a0,a1,a2);
+			case syscallExit:
+				System.out.println("inside exit system call");
+				return 0;
 			/************end****************/
 			default:
 				Lib.debug(dbgProcess, "Unknown syscall " + syscall);
