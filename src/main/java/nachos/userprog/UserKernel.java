@@ -10,7 +10,9 @@ import java.util.LinkedList;
  * A kernel that can support multiple user processes.
  */
 public class UserKernel extends ThreadedKernel {
+	/*********Start (Ashraful)*****************/
 	public static LinkedList<Integer> freePages;
+	/*********Start (Ashraful)*****************/
 	/**
 	 * Allocate a new user kernel.
 	 */
@@ -46,7 +48,6 @@ public class UserKernel extends ThreadedKernel {
 	public void selfTest() {
 		super.selfTest();
 
-		/*
 		System.out.println("Testing the console device. Typed characters");
 		System.out.println("will be echoed until q is typed.");
 
@@ -59,7 +60,6 @@ public class UserKernel extends ThreadedKernel {
 		while (c != 'q');
 
 		System.out.println("");
-		 */
 	}
 
 	/**
