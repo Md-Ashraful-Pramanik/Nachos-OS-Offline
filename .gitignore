@@ -5,3 +5,8 @@ build.gradle
 gradlew.bat
 settings.gradle
 build
+*.bin
+*.class
+*.lock
+*.coff
+*.o
