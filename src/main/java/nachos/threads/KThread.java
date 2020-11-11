@@ -30,6 +30,8 @@ import nachos.machine.*;
  * </pre></blockquote>
  */
 public class KThread {
+	private KThread joinThread = null;
+
 	/**
 	 * Get the current thread.
 	 *
@@ -287,9 +289,8 @@ public class KThread {
 			return;
 
 		if(joinThread == null){
-			joinThread = currentThread;
-
 			boolean status = Machine.interrupt().disable();
+			joinThread = currentThread;
 			sleep();
 			Machine.interrupt().restore(status);
 		}
@@ -464,6 +465,4 @@ public class KThread {
 	private static KThread currentThread = null;
 	private static KThread toBeDestroyed = null;
 	private static KThread idleThread = null;
-
-	private KThread joinThread = null;
 }
