@@ -3,12 +3,12 @@
 
 int main(int argc, char** argv)
 {
-    int i, j, num;
-   
-    char buf[30];
-   
     printf("---------------INSIDE ECHO---------------\n");
-    //readline(buf,10);
+    printf("Received Argument Count: %d\n", argc);
+
+    int i, j, num;
+    char buf[30];
+
     printf("Enter a number: ");
     readline(buf, 10);
     num = atoi(buf);
@@ -29,18 +29,18 @@ int main(int argc, char** argv)
     num = read(3, &buf, 10);
     printf("Return on invalid file descriptor: %d\n", num);
     num = read(0, -12, 10);
-    printf("Return on invallid vaddr: %d\n", num);
+    printf("Return on invalid vaddr: %d\n", num);
     num = read(0, &buf, -2);
-    printf("Return on invallid size: %d\n", num);
+    printf("Return on invalid size: %d\n", num);
     printf("------------END CHECKING INVALID READ CALLS--------------\n");
    
     printf("\n------------CHECKING INVALID WRITE CALLS--------------\n");
     num = write(3, &buf, 10);
     printf("Return on invalid file descriptor: %d\n", num);
     num = write(0, -12, 10);
-    printf("Return on invallid vaddr: %d\n", num);
+    printf("Return on invalid vaddr: %d\n", num);
     num = write(0, &buf, -2);
-    printf("Return on invallid size: %d\n", num);
+    printf("Return on invalid size: %d\n", num);
     printf("------------END CHECKING INVALID WRITE CALLS--------------\n");
    
     printf("\n------------CHECKING INVALID JOIN CALLS--------------\n");
@@ -52,9 +52,7 @@ int main(int argc, char** argv)
 
     printf("\n-------------TRY TO HALT IN ECHO-------------------------\n");
     halt();
-
-   
     printf("\n-------------IN ECHO NOT HALTING-------------------------\n");
-   
+    printf("---------------FINISH ECHO---------------\n");
     return 0;
 }

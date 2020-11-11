@@ -348,8 +348,11 @@ public class UserProcess {
                 if (section.isReadOnly())
                     pageTable[vpn].readOnly = true;
 
+                System.out.print(pageTable[vpn].ppn + "->");
+
                 /*********End (Ashraful)*****************/
             }
+            System.out.println();
         }
 
         return true;
@@ -371,19 +374,16 @@ public class UserProcess {
         /*********End (Ashraful)*****************/
     }
 
-    public void freeAllocatedPages() {
+    /**
+     * Release any resources allocated by <tt>loadSections()</tt>.
+     */
+    protected void unloadSections() {
         /*********Start (Ashraful)*****************/
         pageAllocationLock.acquire();
         for (int i = 0; i < pageTable.length; i++)
             UserKernel.freePages.add(pageTable[i].ppn);
         pageAllocationLock.release();
         /*********End (Ashraful)*****************/
-    }
-
-    /**
-     * Release any resources allocated by <tt>loadSections()</tt>.
-     */
-    protected void unloadSections() {
     }
 
     /**
@@ -492,7 +492,7 @@ public class UserProcess {
             //System.out.println(args[i]);
             //System.out.println(args[i].length());
         }
-        process.execute(programName, new String[]{});
+        process.execute(programName, args);
         process.parentProcess = this;
         this.childProcesses.add(process);
 
@@ -539,7 +539,7 @@ public class UserProcess {
 
         System.out.println("Handle exit called");
 
-        freeAllocatedPages();
+        unloadSections();
         KThread.finish();
         return 0;
     }

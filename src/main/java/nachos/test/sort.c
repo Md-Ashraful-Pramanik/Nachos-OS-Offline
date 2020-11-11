@@ -1,4 +1,4 @@
-/* sort.c 
+/* sort.c
  *    Test program to sort a large number of integers.
  *
  *    Intention is to stress virtual memory system. To increase the memory
@@ -26,8 +26,9 @@ void swap(int* x, int* y)
 int
 main()
 {
+  printf("---------------INSIDE SORT---------------\n");
   int i, j;
-  
+
   /* first initialize the array, in reverse sorted order */
   for (i=0; i<SORTSIZE; i++)
     A(i) = (SORTSIZE-1)-i;
@@ -45,7 +46,7 @@ main()
     if (A(i) != i)
       return 1;
   }
-
+  printf("---------------FINISH SORT---------------\n");
   /* if successful, return 0 */
   return 0;
 }

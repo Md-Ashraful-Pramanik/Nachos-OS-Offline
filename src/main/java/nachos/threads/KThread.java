@@ -30,6 +30,8 @@ import nachos.machine.*;
  * </pre></blockquote>
  */
 public class KThread {
+	private KThread joinThread = null;
+
 	/**
 	 * Get the current thread.
 	 *
@@ -463,6 +465,4 @@ public class KThread {
 	private static KThread currentThread = null;
 	private static KThread toBeDestroyed = null;
 	private static KThread idleThread = null;
-
-	private KThread joinThread = null;
 }
