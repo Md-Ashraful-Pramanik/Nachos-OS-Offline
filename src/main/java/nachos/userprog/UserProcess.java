@@ -7,6 +7,8 @@ import nachos.userprog.*;
 import javax.swing.plaf.IconUIResource;
 import java.awt.print.Pageable;
 import java.io.EOFException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 /**
@@ -460,21 +462,39 @@ public class UserProcess {
         /*********Start (Mahathir)*****************/
         activeProcess++;
 
-        String programName = readVirtualMemoryString(a0, 1024);
-
+        String programName = readVirtualMemoryString(a0, 1023);
         UserProcess process = newUserProcess();
-
+        System.out.println("Argument Count: " + a1);
+        System.out.println("Argument Starting address: " + a2);
+        String[] args = new String[a1];
+        for (int i = 0; i < a1; i++) {
+//            int argPointerAddress = a2 + i * 4;
+//            byte[] data = new byte[4];
+//            int readAmount = readVirtualMemory(argPointerAddress, data);
+//
+//            if(readAmount == 4){
+//                int argAddress = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).getInt();
+//                args[i] = readVirtualMemoryString(argAddress, 1024);
+//                System.out.println(args[i]);
+//            }
+//            byte[] data = new byte[1024];
+//            int readAmount = readVirtualMemory(a2, data);
+//            for (int length = 0; length < readAmount; length++) {
+//                if (data[length] == 0){
+//                    args[i] = new String(data, 0, length);
+//                    readAmount = length + 1;
+//                    break;
+//                }
+//            }
+//            System.out.println("Amount: "+ readAmount + " Arg: "+args[i]);
+            args[i] = readVirtualMemoryString(a2, 1023);
+            a2 += args[i].length() + 1;
+            //System.out.println(args[i]);
+            //System.out.println(args[i].length());
+        }
         process.execute(programName, new String[]{});
-
         process.parentProcess = this;
-
         this.childProcesses.add(process);
-
-
-//		Lib.assertTrue();
-
-        //userProcess.execute(programName,a);
-
 
         return process.processId;
         /*********End (Mahathir)*****************/
