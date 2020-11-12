@@ -10,6 +10,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * Encapsulates the state of a user process that is not contained in its
@@ -37,13 +38,14 @@ public class UserProcess {
     public static int activeProcess= 1;
 
     //handling graph of processes
-    public ArrayList<UserProcess> childProcesses = new ArrayList<>();
+    public Vector<UserProcess> childProcesses = new Vector<>();
     public UserProcess parentProcess = null;
 
     public UThread uThread;
 
     public static Lock consoleLock = new Lock();
     public static Lock pageAllocationLock = new Lock();
+    public static Lock processExecExitLock = new Lock();
 
 
     public UserProcess() {
@@ -71,13 +73,11 @@ public class UserProcess {
      * @return <tt>true</tt> if the program was successfully executed.
      */
     public boolean execute(String name, String[] args) {
-
         if (!load(name, args))
             return false;
 
         uThread = new UThread(this);
         uThread.setName(name).fork();
-
 
         return true;
     }
@@ -348,12 +348,13 @@ public class UserProcess {
                 if (section.isReadOnly())
                     pageTable[vpn].readOnly = true;
 
-                System.out.print(pageTable[vpn].ppn + "->");
+                //System.out.print(pageTable[vpn].ppn + "->");
 
                 /*********End (Ashraful)*****************/
             }
-            System.out.println();
         }
+
+        //System.out.println();
 
         return true;
     }
@@ -362,6 +363,7 @@ public class UserProcess {
         /*********Start (Ashraful)*****************/
         pageTable = new TranslationEntry[numPages];
         pageAllocationLock.acquire();
+        //System.out.println("TOtal pages: "+numPages);
         if (UserKernel.freePages.size() > pageTable.length) {
             for (int i = 0; i < pageTable.length; i++) {
                 pageTable[i] = new TranslationEntry(i,
@@ -369,6 +371,10 @@ public class UserProcess {
             }
             maximumVirtualMemorySize = pageTable.length * pageSize;
             isPageAllocated = true;
+        }
+        else {
+            System.out.println("*********NOT ENOUGH MEMORY.*****************");
+            isPageAllocated = false;
         }
         pageAllocationLock.release();
         /*********End (Ashraful)*****************/
@@ -379,10 +385,12 @@ public class UserProcess {
      */
     protected void unloadSections() {
         /*********Start (Ashraful)*****************/
-        pageAllocationLock.acquire();
-        for (int i = 0; i < pageTable.length; i++)
-            UserKernel.freePages.add(pageTable[i].ppn);
-        pageAllocationLock.release();
+        if (isPageAllocated){
+            pageAllocationLock.acquire();
+            for (int i = 0; i < pageTable.length; i++)
+                UserKernel.freePages.add(pageTable[i].ppn);
+            pageAllocationLock.release();
+        }
         /*********End (Ashraful)*****************/
     }
 
@@ -426,8 +434,6 @@ public class UserProcess {
     //fileDescriptor=0 standard input
     //fileDescriptor=1 standard output
     public int handleRead(int fileDescriptor, int bufferAddress, int count) {
-
-
         if (fileDescriptor != 0 || count < 0)
             return -1;
 
@@ -460,12 +466,10 @@ public class UserProcess {
 
     private int handleExec(int a0, int a1, int a2) {
         /*********Start (Mahathir)*****************/
-        activeProcess++;
-
         String programName = readVirtualMemoryString(a0, 1023);
         UserProcess process = newUserProcess();
-        System.out.println("Argument Count: " + a1);
-        System.out.println("Argument Starting address: " + a2);
+        //System.out.println("Argument Count: " + a1);
+        //System.out.println("Argument Starting address: " + a2);
         String[] args = new String[a1];
         for (int i = 0; i < a1; i++) {
 //            int argPointerAddress = a2 + i * 4;
@@ -492,7 +496,17 @@ public class UserProcess {
             //System.out.println(args[i]);
             //System.out.println(args[i].length());
         }
-        process.execute(programName, args);
+
+        if(process.execute(programName, args)){
+            processExecExitLock.acquire();
+            activeProcess++;
+            processExecExitLock.release();
+        }
+        else {
+            System.out.println("********Program exec failed " + programName);
+            return -1;
+        }
+
         process.parentProcess = this;
         this.childProcesses.add(process);
 
@@ -501,10 +515,8 @@ public class UserProcess {
     }
 
     private int handleJoin(int joinProcessId, int a1) {
-
-        if(joinProcessId<0){
+        if(joinProcessId<0)
             return -1;
-        }
 
         UserProcess joiningProcess = null;
         for (UserProcess u : childProcesses) {
@@ -513,15 +525,13 @@ public class UserProcess {
             }
         }
 
-        if(joiningProcess==null){
+        if(joiningProcess == null
+                || joiningProcess.uThread == null){
             return -1;
         }
-
-
-        System.out.println("Before JOIN");
+        //System.out.println("Before JOIN");
         joiningProcess.uThread.join();
-        System.out.println("After JOIN");
-
+        //System.out.println("After JOIN");
         joiningProcess.parentProcess = null;
 
         childProcesses.remove(joiningProcess);
@@ -530,14 +540,15 @@ public class UserProcess {
     }
 
     private int handleExit(int a0) {
+        processExecExitLock.acquire();
         activeProcess--;
+        processExecExitLock.release();
 
-        System.out.println("active process count: "+activeProcess);
+        System.out.println("********************active process count: "+activeProcess);
         if(activeProcess==0)
             Kernel.kernel.terminate();
 
-
-        System.out.println("Handle exit called");
+        //System.out.println("Handle exit called");
 
         unloadSections();
         KThread.finish();
