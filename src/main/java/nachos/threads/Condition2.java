@@ -14,7 +14,6 @@ import java.util.LinkedList;
  * @see	nachos.threads.Condition
  */
 public class Condition2 {
-    //edited by abser
     /**
      * Allocate a new condition variable.
      *
@@ -43,7 +42,7 @@ public class Condition2 {
         //V
         this.value=0;
         valueQueue.add(value);
-        conditionLock.release();//not by me
+        conditionLock.release();
         boolean status=Machine.interrupt().disable();
         if (this.value == 0) {
             waitQueue.waitForAccess(KThread.currentThread());
@@ -53,7 +52,7 @@ public class Condition2 {
             this.value--;
         }
         Machine.interrupt().restore(status);
-        conditionLock.acquire();//not by me
+        conditionLock.acquire();
         /*******************end***************************/
 
     }

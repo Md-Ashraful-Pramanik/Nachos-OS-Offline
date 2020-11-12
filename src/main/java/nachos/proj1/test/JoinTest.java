@@ -25,10 +25,8 @@ public class JoinTest implements TestInterface {
         }).setName("Testing thread 2");
 
         thread.fork();
-        KThread.yield();
         thread2.fork();
         System.out.println("Waiting for joining other thread.");
-        KThread.yield();
         thread.join();
         thread2.join();
         System.out.println("************FINISH JOIN TEST*******************\n\n");

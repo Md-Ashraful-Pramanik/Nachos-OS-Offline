@@ -29,7 +29,9 @@ import nachos.proj1.test.Test;
  * </pre></blockquote>
  */
 public class KThread {
+	/****************Start********************/
 	private KThread joinThread = null;
+	/****************End********************/
 
 	/**
 	 * Get the current thread.
@@ -196,11 +198,13 @@ public class KThread {
 		Lib.assertTrue(toBeDestroyed == null);
 		toBeDestroyed = currentThread;
 
-
 		currentThread.status = statusFinished;
 
+		/****************Start********************/
 		if (currentThread.joinThread != null)
 			currentThread.joinThread.ready();
+		/****************End********************/
+
 		sleep();
 	}
 
@@ -282,6 +286,7 @@ public class KThread {
 	public void join() {
 		Lib.debug(dbgThread, "Joining to thread: " + toString());
 
+		/****************Start********************/
 		Lib.assertTrue(this != currentThread);
 
 		if (this.status == statusFinished)
@@ -293,6 +298,7 @@ public class KThread {
 			sleep();
 			Machine.interrupt().restore(status);
 		}
+		/****************End********************/
 	}
 
 	/**
@@ -418,7 +424,7 @@ public class KThread {
 	 * Tests whether this module is working.
 	 */
 	public static void selfTest() {
-		Test.runTest();
+		//Test.runTest();
 		//TestSir.selfTest();
 //
 //		Lib.debug(dbgThread, "Enter KThread.selfTest");

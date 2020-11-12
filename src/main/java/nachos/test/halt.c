@@ -16,6 +16,6 @@ int main()
 {
     printf("---------------INSIDE HALT---------------\n");
     halt();
-    printf("---------------FINISH HALT (MACHINE NOT HALTED!)---------------\n");
+    printf("---------------FINISH HALT (MACHINE NOT HALTED!)---------------\n\n");
     return 0;
 }
