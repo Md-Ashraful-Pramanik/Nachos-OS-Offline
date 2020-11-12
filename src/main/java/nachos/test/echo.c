@@ -1,13 +1,18 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
-    printf("---------------INSIDE ECHO---------------\n");
-    printf("Received Argument Count: %d\n", argc);
-
     int i, j, num;
     char buf[30];
+
+    printf("---------------INSIDE ECHO---------------\n");
+    printf("----------------PRINTING RECEIVED ARGUMENT-------------\n");
+    printf("Received Argument Count: %d\n", argc);
+    for(i=0; i<argc; i++){
+        printf("%d argument: %s\n", (i+1), argv[i]);
+    }
+    printf("----------------ARGUMENT PRINT DONE-------------\n");
 
     printf("Enter a number: ");
     readline(buf, 10);

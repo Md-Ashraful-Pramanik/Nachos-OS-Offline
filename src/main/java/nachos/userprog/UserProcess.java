@@ -159,7 +159,7 @@ public class UserProcess {
         byte[] memory = Machine.processor().getMemory();
 
         // for now, just assume that virtual addresses equal physical addresses
-        /*********Start (Ashraful)*****************/
+        /*********Start*****************/
         if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
             return 0;
 
@@ -169,7 +169,7 @@ public class UserProcess {
 
         int amount = Math.min(length, maximumVirtualMemorySize - vaddr);
         System.arraycopy(memory, physicalAddr, data, offset, amount);
-        /*********End (Ashraful)*****************/
+        /*********End*****************/
         return amount;
     }
 
@@ -207,7 +207,7 @@ public class UserProcess {
         byte[] memory = Machine.processor().getMemory();
 
         // for now, just assume that virtual addresses equal physical addresses
-        /*********Start (Ashraful)*****************/
+        /*********Start*****************/
         if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
             return 0;
 
@@ -221,7 +221,7 @@ public class UserProcess {
         System.arraycopy(data, offset, memory, physicalAddr, amount);
 
         pageTable[vpn].dirty = true;
-        /*********End (Ashraful)*****************/
+        /*********End*****************/
         return amount;
     }
 
@@ -320,14 +320,14 @@ public class UserProcess {
      * @return <tt>true</tt> if the sections were successfully loaded.
      */
     protected boolean loadSections() {
-        /*********Start (Ashraful)*****************/
+        /*********Start*****************/
         allocatePages();
         if (!isPageAllocated) {
             coff.close();
             Lib.debug(dbgProcess, "\tinsufficient physical memory");
             return false;
         }
-        /*********End (Ashraful)*****************/
+        /*********End*****************/
 
         // load sections
         for (int s = 0; s < coff.getNumSections(); s++) {
@@ -340,7 +340,7 @@ public class UserProcess {
                 int vpn = section.getFirstVPN() + i;
 
                 // for now, just assume virtual addresses=physical addresses
-                /*********Start (Ashraful)*****************/
+                /*********Start*****************/
                 if (vpn > pageTable.length)
                     return false;
 
@@ -350,7 +350,7 @@ public class UserProcess {
 
                 //System.out.print(pageTable[vpn].ppn + "->");
 
-                /*********End (Ashraful)*****************/
+                /*********End*****************/
             }
         }
 
@@ -360,38 +360,43 @@ public class UserProcess {
     }
 
     public void allocatePages() {
-        /*********Start (Ashraful)*****************/
-        pageTable = new TranslationEntry[numPages];
-        pageAllocationLock.acquire();
-        //System.out.println("TOtal pages: "+numPages);
-        if (UserKernel.freePages.size() > pageTable.length) {
+        /*********Start*****************/
+        if (UserKernel.freePages.size() > numPages) {
+            pageTable = new TranslationEntry[numPages];
+            pageAllocationLock.acquire();
+            //System.out.println("TOtal pages: "+numPages);
+
             for (int i = 0; i < pageTable.length; i++) {
                 pageTable[i] = new TranslationEntry(i,
                         UserKernel.freePages.pollFirst(), true, false, false, false);
             }
             maximumVirtualMemorySize = pageTable.length * pageSize;
             isPageAllocated = true;
+
+            pageAllocationLock.release();
         }
         else {
+            System.out.println();
+            System.out.println("*********PAGE REQUIRED: " +numPages+ " ************");
+            System.out.println("*********NO of FREE PAGES: "+ UserKernel.freePages.size()+" *************");
             System.out.println("*********NOT ENOUGH MEMORY.*****************");
             isPageAllocated = false;
         }
-        pageAllocationLock.release();
-        /*********End (Ashraful)*****************/
+        /*********End*****************/
     }
 
     /**
      * Release any resources allocated by <tt>loadSections()</tt>.
      */
     protected void unloadSections() {
-        /*********Start (Ashraful)*****************/
+        /*********Start*****************/
         if (isPageAllocated){
             pageAllocationLock.acquire();
             for (int i = 0; i < pageTable.length; i++)
                 UserKernel.freePages.add(pageTable[i].ppn);
             pageAllocationLock.release();
         }
-        /*********End (Ashraful)*****************/
+        /*********End*****************/
     }
 
     /**
@@ -465,34 +470,22 @@ public class UserProcess {
     }
 
     private int handleExec(int a0, int a1, int a2) {
-        /*********Start (Mahathir)*****************/
+        System.out.println("********NO of FREE PAGES: "+ UserKernel.freePages.size() + " *********");
+        /*********Start*****************/
         String programName = readVirtualMemoryString(a0, 1023);
         UserProcess process = newUserProcess();
         //System.out.println("Argument Count: " + a1);
         //System.out.println("Argument Starting address: " + a2);
+
+        byte[] data = new byte[4*a1];
+        int readAmount = readVirtualMemory(a2, data);
+        //System.out.println(readAmount);
+
         String[] args = new String[a1];
         for (int i = 0; i < a1; i++) {
-//            int argPointerAddress = a2 + i * 4;
-//            byte[] data = new byte[4];
-//            int readAmount = readVirtualMemory(argPointerAddress, data);
-//
-//            if(readAmount == 4){
-//                int argAddress = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).getInt();
-//                args[i] = readVirtualMemoryString(argAddress, 1024);
-//                System.out.println(args[i]);
-//            }
-//            byte[] data = new byte[1024];
-//            int readAmount = readVirtualMemory(a2, data);
-//            for (int length = 0; length < readAmount; length++) {
-//                if (data[length] == 0){
-//                    args[i] = new String(data, 0, length);
-//                    readAmount = length + 1;
-//                    break;
-//                }
-//            }
-//            System.out.println("Amount: "+ readAmount + " Arg: "+args[i]);
-            args[i] = readVirtualMemoryString(a2, 1023);
-            a2 += args[i].length() + 1;
+            int argAddress = Lib.bytesToInt(data, i*4);
+            args[i] = readVirtualMemoryString(argAddress, 1024);
+            //System.out.println("User process: "+args[i]);
             //System.out.println(args[i]);
             //System.out.println(args[i].length());
         }
@@ -511,7 +504,7 @@ public class UserProcess {
         this.childProcesses.add(process);
 
         return process.processId;
-        /*********End (Mahathir)*****************/
+        /*********End*****************/
     }
 
     private int handleJoin(int joinProcessId, int a1) {
@@ -544,7 +537,7 @@ public class UserProcess {
         activeProcess--;
         processExecExitLock.release();
 
-        System.out.println("********************active process count: "+activeProcess);
+        System.out.println("***************active process count: "+activeProcess+" **************");
         if(activeProcess==0)
             Kernel.kernel.terminate();
 
@@ -613,12 +606,14 @@ public class UserProcess {
                 return handleExit(a0);
             case syscallJoin:
                 return handleJoin(a0, a1);
-            /************end****************/
             default:
                 Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 
-                System.out.println("Unknown syscall");
+                System.out.println("***********Unknown syscall****************");
+                System.out.println("***********Exiting the process****************");
                 handleExit(0);
+
+                /************end****************/
                 Lib.assertNotReached("Unknown system call!");
         }
         return 0;
@@ -651,7 +646,8 @@ public class UserProcess {
                 //System.out.println("Unexpected exception: " + Processor.exceptionNames[cause]);
                 Lib.debug(dbgProcess, "Unexpected exception: " +
                         Processor.exceptionNames[cause]);
-                System.out.println("Unknown exception");
+                System.out.println("************Unknown exception******************");
+                System.out.println("************Exiting the process******************");
                 handleExit(0);
                 Lib.assertNotReached("Unexpected exception");
         }
