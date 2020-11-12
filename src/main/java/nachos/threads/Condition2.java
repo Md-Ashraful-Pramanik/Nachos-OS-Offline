@@ -25,7 +25,7 @@ public class Condition2 {
      */
     public Condition2(Lock conditionLock) {
         this.conditionLock = conditionLock;
-        valueQueue=new LinkedList();
+        //valueQueue=new LinkedList();
 
     }
 
@@ -41,17 +41,17 @@ public class Condition2 {
 
         /*******************start************************/
         //V
-        this.value=0;
-        valueQueue.add(value);
+        //this.value=0;
+        //valueQueue.add(value);
         conditionLock.release();//not by me
         boolean status=Machine.interrupt().disable();
-        if (this.value == 0) {
+        //if (this.value == 0) {
             waitQueue.waitForAccess(KThread.currentThread());
             KThread.sleep();
-        }
-        else {
-            this.value--;
-        }
+        //}
+        //else {
+            //this.value--;
+        //}
         Machine.interrupt().restore(status);
         conditionLock.acquire();//not by me
         /*******************end***************************/
@@ -69,14 +69,14 @@ public class Condition2 {
         /****************start***********************/
         //P
         boolean status=Machine.interrupt().disable();
-        if (!valueQueue.isEmpty()){
-            valueQueue.removeFirst();
+        //if (!valueQueue.isEmpty()){
+            //valueQueue.removeFirst();
             KThread thread=waitQueue.nextThread();
             if(thread!=null){
                 thread.ready();
-            }else{
-                this.value++;
-            }
+            //}else{
+                //this.value++;
+            //}
         }
         Machine.interrupt().restore(status);
         /*************end*********************/
@@ -92,16 +92,21 @@ public class Condition2 {
 
 
         /*****************start***********************/
-        while (!valueQueue.isEmpty()){
-            wake();
+        //while (!valueQueue.isEmpty()){
+        KThread thread=waitQueue.nextThread();
+        while(thread!=null) {
+            //wake();
+            thread.ready();
+            thread=waitQueue.nextThread();
         }
+        //}
         /****************end*************************/
 
     }
 
-    private int value;
+    //private int value;
     private Lock conditionLock;
-    private LinkedList<Integer> valueQueue;
+    //private LinkedList<Integer> valueQueue;
     private ThreadQueue waitQueue =
             ThreadedKernel.scheduler.newThreadQueue(false);
 }

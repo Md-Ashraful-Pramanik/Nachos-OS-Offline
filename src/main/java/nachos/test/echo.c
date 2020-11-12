@@ -20,11 +20,11 @@ int main(int argc, char** argv)
         printf("\n");
     }
     printf("\n");
-   
+
     printf("Enter any string: ");
     readline(buf, 30);
     printf("INPUT by user : %s\n", buf);
-   
+
     printf("------------CHECKING INVALID READ CALLS--------------\n");
     num = read(3, &buf, 10);
     printf("Return on invalid file descriptor: %d\n", num);
@@ -33,7 +33,7 @@ int main(int argc, char** argv)
     num = read(0, &buf, -2);
     printf("Return on invalid size: %d\n", num);
     printf("------------END CHECKING INVALID READ CALLS--------------\n");
-   
+
     printf("\n------------CHECKING INVALID WRITE CALLS--------------\n");
     num = write(3, &buf, 10);
     printf("Return on invalid file descriptor: %d\n", num);
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     num = write(0, &buf, -2);
     printf("Return on invalid size: %d\n", num);
     printf("------------END CHECKING INVALID WRITE CALLS--------------\n");
-   
+
     printf("\n------------CHECKING INVALID JOIN CALLS--------------\n");
     num = join(2, &num);
     printf("Return for join on pid 2 : %d\n", num);
