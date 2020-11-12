@@ -1,13 +1,13 @@
-package nachos.proj1;
-
-
+package nachos.proj1.test;
+import nachos.proj1.test.TestInterface;
 import nachos.threads.Alarm;
 import nachos.threads.KThread;
 
-public class WaitUntilTest implements TestInterface{
+public class WaitUntilTest implements TestInterface {
 
     @Override
     public void startTesting(){
+        System.out.println("\n\n************IN WAIT UNTIL TEST*******************");
         Alarm alarm = new Alarm();
 
         KThread thread = new KThread(new Runnable() {
@@ -35,5 +35,6 @@ public class WaitUntilTest implements TestInterface{
         System.out.println("Thread 1 joined.");
         thread2.join();
         System.out.println("Thread 2 joined.");
+        System.out.println("************COMPLETE WAIT UNTIL TEST*******************\n\n");
     }
 }

@@ -9,7 +9,7 @@ int main()
     printf("---------------INSIDE Testcase.c---------------\n");
     
     printf("---------------EXEC echo.coff---------------\n");
-    char execArgs[3][10]={"test","hello","google"};
+    char *execArgs[3]={"test","hello","google"};
     int echoPId = exec("echo.coff",3,execArgs);
 
     printf("---------------EXEC UNHANDLED syscall.coff---------------\n");

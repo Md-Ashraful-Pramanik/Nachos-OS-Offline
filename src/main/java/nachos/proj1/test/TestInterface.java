@@ -1,4 +1,4 @@
-package nachos.proj1;
+package nachos.proj1.test;
 
 public interface TestInterface {
     void startTesting();

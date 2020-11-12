@@ -1,8 +1,7 @@
 package nachos.threads;
 
 import nachos.machine.*;
-//import nachos.proj1.Test;
-//import nachos.proj1.TestSir;
+import nachos.proj1.test.Test;
 
 /**
  * A KThread is a thread that can be used to execute Nachos kernel code. Nachos
@@ -419,7 +418,7 @@ public class KThread {
 	 * Tests whether this module is working.
 	 */
 	public static void selfTest() {
-		//Test.runTest();
+		Test.runTest();
 		//TestSir.selfTest();
 //
 //		Lib.debug(dbgThread, "Enter KThread.selfTest");
