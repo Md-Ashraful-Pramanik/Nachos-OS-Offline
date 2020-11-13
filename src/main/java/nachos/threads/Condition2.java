@@ -14,7 +14,11 @@ import java.util.LinkedList;
  * @see	nachos.threads.Condition
  */
 public class Condition2 {
-    //edited by abser
+
+    private Lock conditionLock;
+    private ThreadQueue waitQueue =
+            ThreadedKernel.scheduler.newThreadQueue(false);
+
     /**
      * Allocate a new condition variable.
      *
@@ -25,8 +29,6 @@ public class Condition2 {
      */
     public Condition2(Lock conditionLock) {
         this.conditionLock = conditionLock;
-        //valueQueue=new LinkedList();
-
     }
 
     /**
@@ -38,24 +40,15 @@ public class Condition2 {
     public void sleep() {
         Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
-
         /*******************start************************/
         //V
-        //this.value=0;
-        //valueQueue.add(value);
         conditionLock.release();//not by me
         boolean status=Machine.interrupt().disable();
-        //if (this.value == 0) {
-            waitQueue.waitForAccess(KThread.currentThread());
-            KThread.sleep();
-        //}
-        //else {
-            //this.value--;
-        //}
+        waitQueue.waitForAccess(KThread.currentThread());
+        KThread.sleep();
         Machine.interrupt().restore(status);
         conditionLock.acquire();//not by me
         /*******************end***************************/
-
     }
 
     /**
@@ -65,22 +58,15 @@ public class Condition2 {
     public void wake() {
         Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
-
         /****************start***********************/
         //P
         boolean status=Machine.interrupt().disable();
-        //if (!valueQueue.isEmpty()){
-            //valueQueue.removeFirst();
-            KThread thread=waitQueue.nextThread();
-            if(thread!=null){
-                thread.ready();
-            //}else{
-                //this.value++;
-            //}
+        KThread thread=waitQueue.nextThread();
+        if(thread!=null){
+            thread.ready();
         }
         Machine.interrupt().restore(status);
         /*************end*********************/
-
     }
 
     /**
@@ -90,25 +76,15 @@ public class Condition2 {
     public void wakeAll() {
         Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
-
         /*****************start***********************/
-        //while (!valueQueue.isEmpty()){
         boolean status=Machine.interrupt().disable();
         KThread thread=waitQueue.nextThread();
         while(thread!=null) {
-            //wake();
             thread.ready();
             thread=waitQueue.nextThread();
         }
         Machine.interrupt().restore(status);
-        //}
         /****************end*************************/
-
     }
 
-    //private int value;
-    private Lock conditionLock;
-    //private LinkedList<Integer> valueQueue;
-    private ThreadQueue waitQueue =
-            ThreadedKernel.scheduler.newThreadQueue(false);
 }

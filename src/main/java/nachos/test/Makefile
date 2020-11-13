@@ -31,7 +31,7 @@ LIB = assert atoi printf readline stdio strncmp strcat strcmp strcpy strlen memc
 NLIB = libnachos.a
 
 
-TARGETS =  testTushar mypgr syscall testcase halt echo sh matmult sort cat cp mv rm demo  error #chat chatserver
+TARGETS =  mypgr syscall testcase halt echo sh matmult sort cat cp mv rm demo  error #chat chatserver
 
 
 .SECONDARY: $(patsubst %.c,%.o,$(wildcard *.c))

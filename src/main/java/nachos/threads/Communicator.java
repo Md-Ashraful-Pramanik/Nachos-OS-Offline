@@ -86,10 +86,7 @@ public class Communicator {
 
         listenerExist = true;
 
-        if (!speakerExist) {
-            //System.out.println(threadName + " Block no speaker");
-        }
-        else {
+        if (speakerExist) {
             speakerCondition.wakeAll();
             //System.out.println(threadName + " waiting for speaking");
         }

@@ -541,8 +541,6 @@ public class UserProcess {
         if(activeProcess==0)
             Kernel.kernel.terminate();
 
-        //System.out.println("Handle exit called");
-
         unloadSections();
         KThread.finish();
         return 0;

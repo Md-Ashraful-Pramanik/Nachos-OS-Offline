@@ -1,19 +1,17 @@
 package nachos.threads;
 
 import nachos.machine.*;
-
-import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
  * until a certain time.
  */
 public class Alarm {
-    //edited by abser
     /*********************start******************/
 
-    private ArrayList<Long>timeList;
-    private ArrayList<KThread>threadList;
+    private Vector<Long> timeList;
+    private Vector<KThread>threadList;
 
     /*********************end*******************/
 
@@ -26,8 +24,8 @@ public class Alarm {
      */
     public Alarm() {
         /****************start********************/
-        timeList=new ArrayList<>();
-        threadList=new ArrayList<>();
+        timeList=new Vector<>();
+        threadList=new Vector<>();
         /****************end*********************/
 
         Machine.timer().setInterruptHandler(new Runnable() {
