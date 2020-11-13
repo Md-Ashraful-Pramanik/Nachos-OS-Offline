@@ -10,6 +10,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Vector;
 
 /**
@@ -33,20 +34,21 @@ public class UserProcess {
 
 
     public int processId = -1;
-    public static int totalNumberOfProcesses = 0;
-
-    public static int activeProcess= 1;
-
     //handling graph of processes
     public Vector<UserProcess> childProcesses = new Vector<>();
     public UserProcess parentProcess = null;
 
     public UThread uThread;
 
+
+    public static int totalNumberOfProcesses = 0;
+    public static int activeProcess= 1;
+
+    public static Hashtable<Integer, Integer> exitStatus = new Hashtable<>();
+
     public static Lock consoleLock = new Lock();
     public static Lock pageAllocationLock = new Lock();
     public static Lock processExecExitLock = new Lock();
-
 
     public UserProcess() {
         this.processId = totalNumberOfProcesses;
@@ -161,7 +163,7 @@ public class UserProcess {
         // for now, just assume that virtual addresses equal physical addresses
         /*********Start*****************/
         if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
-            return 0;
+            return -1;
 
         int vpn = Processor.pageFromAddress(vaddr);
         int pageOffset = Processor.offsetFromAddress(vaddr);
@@ -209,12 +211,12 @@ public class UserProcess {
         // for now, just assume that virtual addresses equal physical addresses
         /*********Start*****************/
         if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
-            return 0;
+            return -1;
 
         int vpn = Processor.pageFromAddress(vaddr);
         int pageOffset = Processor.offsetFromAddress(vaddr);
         if (pageTable[vpn].readOnly)
-            return 0;
+            return -1;
         int physicalAddr = Processor.makeAddress(pageTable[vpn].ppn, pageOffset);
 
         int amount = Math.min(length, maximumVirtualMemorySize - vaddr);
@@ -529,7 +531,7 @@ public class UserProcess {
 
         childProcesses.remove(joiningProcess);
 
-        return 0;
+        return exitStatus.remove(joinProcessId);
     }
 
     private int handleExit(int a0) {
@@ -540,6 +542,8 @@ public class UserProcess {
         System.out.println("***************active process count: "+activeProcess+" **************");
         if(activeProcess==0)
             Kernel.kernel.terminate();
+
+        exitStatus.put(processId, a0);
 
         unloadSections();
         KThread.finish();

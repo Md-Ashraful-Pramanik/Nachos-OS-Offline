@@ -47,6 +47,7 @@ int main()
     int status2 = 0;
     status2 = join(matmalPId2, &status2);
     printf("---------------JOINING from matmult.coff---------------\n");
+    printf("---------------matmult.coff exit with status %d---------------\n", status2);
 
     printf("---------------Done Testcase.c---------------\n");
     return 0;

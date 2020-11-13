@@ -32,6 +32,7 @@ main()
             for (k = 0; k < Dim; k++)
 		 C[i][j] += A[i][k] * B[k][j];
 
+    printf("---------------MATRIX MULTIPLICATION will exit with %d---------------\n", (C[Dim-1][Dim-1]));
     printf("---------------FINISH MATRIX MULTIPLICATION---------------\n");
     return (C[Dim-1][Dim-1]);		/* and then we're done */
 }
