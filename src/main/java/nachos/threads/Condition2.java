@@ -93,12 +93,14 @@ public class Condition2 {
 
         /*****************start***********************/
         //while (!valueQueue.isEmpty()){
+        boolean status=Machine.interrupt().disable();
         KThread thread=waitQueue.nextThread();
         while(thread!=null) {
             //wake();
             thread.ready();
             thread=waitQueue.nextThread();
         }
+        Machine.interrupt().restore(status);
         //}
         /****************end*************************/
 

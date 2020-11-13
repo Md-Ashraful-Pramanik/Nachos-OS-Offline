@@ -424,7 +424,7 @@ public class KThread {
 	 * Tests whether this module is working.
 	 */
 	public static void selfTest() {
-		//Test.runTest();
+		Test.runTest();
 		//TestSir.selfTest();
 //
 //		Lib.debug(dbgThread, "Enter KThread.selfTest");
