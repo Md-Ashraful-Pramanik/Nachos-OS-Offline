@@ -10,23 +10,23 @@ import java.util.LinkedList;
  * A kernel that can support multiple user processes.
  */
 public class UserKernel extends ThreadedKernel {
-	/*********Start (Ashraful)*****************/
-	public static LinkedList<Integer> freePages;
-	/*********Start (Ashraful)*****************/
-	/**
-	 * Allocate a new user kernel.
-	 */
+//	/*********Start (Ashraful)*****************/
+//	public static LinkedList<Integer> freePages;
+//	/*********Start (Ashraful)*****************/
+//	/**
+//	 * Allocate a new user kernel.
+//	 */
 	public UserKernel() {
 		super();
-		initFreePageList();
+//		initFreePageList();
 	}
 
-	public void initFreePageList() {
-		freePages = new LinkedList<>();
-		for (int i = 0; i < Machine.processor().getNumPhysPages(); i++) {
-			freePages.add(i);
-		}
-	}
+//	public void initFreePageList() {
+//		freePages = new LinkedList<>();
+//		for (int i = 0; i < Machine.processor().getNumPhysPages(); i++) {
+//			freePages.add(i);
+//		}
+//	}
 
 	/**
 	 * Initialize this kernel. Creates a synchronized console and sets the

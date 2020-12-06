@@ -3,6 +3,7 @@ package nachos.userprog;
 import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
+import nachos.vm.VMKernel;
 
 import javax.swing.plaf.IconUIResource;
 import java.awt.print.Pageable;
@@ -34,6 +35,7 @@ public class UserProcess {
 
 
     public int processId = -1;
+    public int codeSectionPageCount;
     //handling graph of processes
     public Vector<UserProcess> childProcesses = new Vector<>();
     public UserProcess parentProcess = null;
@@ -96,7 +98,7 @@ public class UserProcess {
      * <tt>UThread.restoreState()</tt>.
      */
     public void restoreState() {
-        Machine.processor().setPageTable(pageTable);
+        //Machine.processor().setPageTable(pageTable);
     }
 
     /**
@@ -160,19 +162,18 @@ public class UserProcess {
 
         byte[] memory = Machine.processor().getMemory();
 
-        // for now, just assume that virtual addresses equal physical addresses
         /*********Start*****************/
-        if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
+        if (vaddr < 0)
             return -1;
 
         int vpn = Processor.pageFromAddress(vaddr);
+        VMKernel.pageTable.getPage(processId, vpn).used = true;
         int pageOffset = Processor.offsetFromAddress(vaddr);
-        int physicalAddr = Processor.makeAddress(pageTable[vpn].ppn, pageOffset);
+        int physicalAddr = Processor.makeAddress(VMKernel.pageTable.getPage(processId, vpn).ppn, pageOffset);
 
-        int amount = Math.min(length, maximumVirtualMemorySize - vaddr);
-        System.arraycopy(memory, physicalAddr, data, offset, amount);
+        System.arraycopy(memory, physicalAddr, data, offset, length);
         /*********End*****************/
-        return amount;
+        return length;
     }
 
     /**
@@ -208,23 +209,23 @@ public class UserProcess {
 
         byte[] memory = Machine.processor().getMemory();
 
-        // for now, just assume that virtual addresses equal physical addresses
         /*********Start*****************/
-        if (vaddr < 0 || vaddr >= maximumVirtualMemorySize)
+        if (vaddr < 0)
             return -1;
 
         int vpn = Processor.pageFromAddress(vaddr);
-        int pageOffset = Processor.offsetFromAddress(vaddr);
-        if (pageTable[vpn].readOnly)
+        //System.out.println("ProcessID: "+processId+"vpn: "+vpn);
+        VMKernel.pageTable.getPage(processId, vpn).used = true;
+        if (VMKernel.pageTable.getPage(processId, vpn).readOnly)
             return -1;
-        int physicalAddr = Processor.makeAddress(pageTable[vpn].ppn, pageOffset);
+        int pageOffset = Processor.offsetFromAddress(vaddr);
+        int physicalAddr = Processor.makeAddress(VMKernel.pageTable.getPage(processId, vpn).ppn, pageOffset);
 
-        int amount = Math.min(length, maximumVirtualMemorySize - vaddr);
-        System.arraycopy(data, offset, memory, physicalAddr, amount);
+        System.arraycopy(data, offset, memory, physicalAddr, length);
 
-        pageTable[vpn].dirty = true;
+        VMKernel.pageTable.getPage(processId, vpn).dirty = true;
         /*********End*****************/
-        return amount;
+        return length;
     }
 
     /**
@@ -284,6 +285,10 @@ public class UserProcess {
         initialPC = coff.getEntryPoint();
 
         // next comes the stack; stack pointer initially points to top of it
+        /**************** Start *********************/
+        codeSectionPageCount = numPages;
+        //System.out.println("Number of page in code section: "+codeSectionPageCount);
+        /**************** End *********************/
         numPages += stackPages;
         initialSP = numPages * pageSize;
 
@@ -293,24 +298,28 @@ public class UserProcess {
         if (!loadSections())
             return false;
 
-        // store arguments in last page
-        int entryOffset = (numPages - 1) * pageSize;
-        int stringOffset = entryOffset + args.length * 4;
+        if(argc != 0){
+            // store arguments in last page
+            int entryOffset = (numPages - 1) * pageSize;
+            /**************** Start *********************/
+            VMKernel.pageTable.handlePageFault(processId, Processor.pageFromAddress(entryOffset), this);
+            /**************** End ***********************/
+            int stringOffset = entryOffset + args.length * 4;
 
-        this.argc = args.length;
-        this.argv = entryOffset;
+            this.argc = args.length;
+            this.argv = entryOffset;
 
-        for (int i = 0; i < argv.length; i++) {
-            byte[] stringOffsetBytes = Lib.bytesFromInt(stringOffset);
-            Lib.assertTrue(writeVirtualMemory(entryOffset, stringOffsetBytes) == 4);
-            entryOffset += 4;
-            Lib.assertTrue(writeVirtualMemory(stringOffset, argv[i]) ==
-                    argv[i].length);
-            stringOffset += argv[i].length;
-            Lib.assertTrue(writeVirtualMemory(stringOffset, new byte[]{0}) == 1);
-            stringOffset += 1;
+            for (int i = 0; i < argv.length; i++) {
+                byte[] stringOffsetBytes = Lib.bytesFromInt(stringOffset);
+                Lib.assertTrue(writeVirtualMemory(entryOffset, stringOffsetBytes) == 4);
+                entryOffset += 4;
+                Lib.assertTrue(writeVirtualMemory(stringOffset, argv[i]) ==
+                        argv[i].length);
+                stringOffset += argv[i].length;
+                Lib.assertTrue(writeVirtualMemory(stringOffset, new byte[]{0}) == 1);
+                stringOffset += 1;
+            }
         }
-
         return true;
     }
 
@@ -322,14 +331,14 @@ public class UserProcess {
      * @return <tt>true</tt> if the sections were successfully loaded.
      */
     protected boolean loadSections() {
-        /*********Start*****************/
-        allocatePages();
-        if (!isPageAllocated) {
-            coff.close();
-            Lib.debug(dbgProcess, "\tinsufficient physical memory");
-            return false;
-        }
-        /*********End*****************/
+//        /*********Start*****************/
+//        //allocatePages();
+//        if (!isPageAllocated) {
+//            coff.close();
+//            Lib.debug(dbgProcess, "\tinsufficient physical memory");
+//            return false;
+//        }
+//        /*********End*****************/
 
         // load sections
         for (int s = 0; s < coff.getNumSections(); s++) {
@@ -361,44 +370,45 @@ public class UserProcess {
         return true;
     }
 
-    public void allocatePages() {
-        /*********Start*****************/
-        if (UserKernel.freePages.size() > numPages) {
-            pageTable = new TranslationEntry[numPages];
-            pageAllocationLock.acquire();
-            //System.out.println("TOtal pages: "+numPages);
-
-            for (int i = 0; i < pageTable.length; i++) {
-                pageTable[i] = new TranslationEntry(i,
-                        UserKernel.freePages.pollFirst(), true, false, false, false);
-            }
-            maximumVirtualMemorySize = pageTable.length * pageSize;
-            isPageAllocated = true;
-
-            pageAllocationLock.release();
-        }
-        else {
-            System.out.println();
-            System.out.println("*********PAGE REQUIRED: " +numPages+ " ************");
-            System.out.println("*********NO of FREE PAGES: "+ UserKernel.freePages.size()+" *************");
-            System.out.println("*********NOT ENOUGH MEMORY.*****************");
-            isPageAllocated = false;
-        }
-        /*********End*****************/
-    }
-
-    /**
-     * Release any resources allocated by <tt>loadSections()</tt>.
-     */
+//
+//    public void allocatePages() {
+//        /*********Start*****************/
+//        if (UserKernel.freePages.size() > numPages) {
+//            pageTable = new TranslationEntry[numPages];
+//            pageAllocationLock.acquire();
+//            //System.out.println("TOtal pages: "+numPages);
+//
+//            for (int i = 0; i < pageTable.length; i++) {
+//                pageTable[i] = new TranslationEntry(i,
+//                        UserKernel.freePages.pollFirst(), true, false, false, false);
+//            }
+//            maximumVirtualMemorySize = pageTable.length * pageSize;
+//            isPageAllocated = true;
+//
+//            pageAllocationLock.release();
+//        }
+//        else {
+//            System.out.println();
+//            System.out.println("*********PAGE REQUIRED: " +numPages+ " ************");
+//            System.out.println("*********NO of FREE PAGES: "+ UserKernel.freePages.size()+" *************");
+//            System.out.println("*********NOT ENOUGH MEMORY.*****************");
+//            isPageAllocated = false;
+//        }
+//        /*********End*****************/
+//    }
+//
+//    /**
+//     * Release any resources allocated by <tt>loadSections()</tt>.
+//     */
     protected void unloadSections() {
-        /*********Start*****************/
-        if (isPageAllocated){
-            pageAllocationLock.acquire();
-            for (int i = 0; i < pageTable.length; i++)
-                UserKernel.freePages.add(pageTable[i].ppn);
-            pageAllocationLock.release();
-        }
-        /*********End*****************/
+//        /*********Start*****************/
+//        if (isPageAllocated){
+//            pageAllocationLock.acquire();
+//            for (int i = 0; i < pageTable.length; i++)
+//                UserKernel.freePages.add(pageTable[i].ppn);
+//            pageAllocationLock.release();
+//        }
+//        /*********End*****************/
     }
 
     /**
@@ -472,7 +482,7 @@ public class UserProcess {
     }
 
     private int handleExec(int a0, int a1, int a2) {
-        System.out.println("********NO of FREE PAGES: "+ UserKernel.freePages.size() + " *********");
+        //System.out.println("********NO of FREE PAGES: "+ UserKernel.freePages.size() + " *********");
         /*********Start*****************/
         String programName = readVirtualMemoryString(a0, 1023);
         UserProcess process = newUserProcess();
@@ -537,6 +547,7 @@ public class UserProcess {
     private int handleExit(int a0) {
         processExecExitLock.acquire();
         activeProcess--;
+        VMKernel.tlb.flushTLB();
         processExecExitLock.release();
 
         System.out.println("***************active process count: "+activeProcess+" **************");
@@ -545,7 +556,7 @@ public class UserProcess {
 
         exitStatus.put(processId, a0);
 
-        unloadSections();
+        //unloadSections();
         KThread.finish();
         return 0;
     }
@@ -645,20 +656,22 @@ public class UserProcess {
                 break;
 
             default:
-                //System.out.println("Unexpected exception: " + Processor.exceptionNames[cause]);
+                System.out.println("Unexpected exception: " + Processor.exceptionNames[cause]);
+                if(Processor.exceptionNames[cause].toString().startsWith("read-only"))
+                    Lib.assertNotReached();
                 Lib.debug(dbgProcess, "Unexpected exception: " +
                         Processor.exceptionNames[cause]);
                 System.out.println("************Unknown exception******************");
                 System.out.println("************Exiting the process******************");
                 handleExit(0);
-                Lib.assertNotReached("Unexpected exception");
+                Lib.assertNotReached("Unexpected exception "+Processor.exceptionNames[cause]);
         }
     }
 
     /**
      * The program being run by this process.
      */
-    protected Coff coff;
+    public Coff coff;
 
     /**
      * This process's page table.
