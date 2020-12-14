@@ -50,7 +50,12 @@ public class Condition2 {
         conditionLock.acquire();//not by me
         /*******************end***************************/
     }
-
+    /*
+    A condition variable uses a lock and a queue to store all the values of the condition variable. It has a list of threads that line up to check for this condition variable.
+Whenever sleep() is called, a value is added to the queue of values and waits for the lock to be released by any other thread who might have acquired it. If the value remains unchanged, the thread will wait for the currently running thread and go to sleep afterwards.
+Whenever wake is called on a condition variable, firstly it is checked whether the lock is held by the current thread. If the queue of values is not empty, then the first value is removed and if there is a thread waiting in line, it will be marked as ready to be run.
+wakeAll() method of the condition variable calls wake() until the queue of values is empty.
+     */
     /**
      * Wake up at most one thread sleeping on this condition variable. The
      * current thread must hold the associated lock.

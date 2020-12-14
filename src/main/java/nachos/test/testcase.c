@@ -6,7 +6,7 @@
 int main()
 {
     char** args;
-    printf("---------------INSIDE Testcase.c---------------\n");
+    printf("---------------INSIDE Testcase.c    testing ---------------\n");
     
     printf("---------------EXEC echo.coff---------------\n");
     char *execArgs[3]={"test","hello","google"};

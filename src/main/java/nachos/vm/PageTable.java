@@ -42,27 +42,40 @@ public class PageTable {
             ppn = invertedPageTable.size();
         else {
             String key = getPageKeyToBeReplace();
-            ppn = invertedPageTable.get(key).ppn;
-            //if (tlbEntry.valid && !tlbEntry.readOnly && tlbEntry.dirty){}
+            TranslationEntry pageTableEntry=invertedPageTable.get(key);
+            ppn = pageTableEntry.ppn;
+            if (pageTableEntry.valid && !pageTableEntry.readOnly && pageTableEntry.dirty){
+                System.out.println("Writing to swap file");
+                byte []buf=Machine.processor().getMemory();
+                VMKernel.swapFile.write(getKey(processID,vpn),buf,
+                        ppn*Machine.processor().pageSize);
+            }
             /************* (Mahathir & Abser)Save this page in swap space *************/
         }
 
         /********  (Mahathir & Abser) If page is in SwapSpace Take from swapspace ********/
         TranslationEntry translationEntry = null;
-
-        //System.out.println(vmProcess.codeSectionPageCount);
-        if (process.codeSectionPageCount > vpn) {
-            for (int i = 0; i < process.coff.getNumSections(); i++) {
-                CoffSection section = process.coff.getSection(i);
-                if ((section.getFirstVPN() + section.getLength() - 1) < vpn)
-                    continue;
-                section.loadPage(vpn - section.getFirstVPN(), ppn);
-                translationEntry = new TranslationEntry(
-                        vpn, ppn, true, section.isReadOnly(), false, false);
-                break;
-            }
-        } else {
+        byte []buf=Machine.processor().getMemory();
+        int value=VMKernel.swapFile.read(getKey(processID,vpn),buf);
+        if(value!=-1){
+            System.out.println("Reading from swap file");
             translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
+        }
+        //System.out.println(vmProcess.codeSectionPageCount);
+        else {
+            if (process.codeSectionPageCount > vpn) {
+                for (int i = 0; i < process.coff.getNumSections(); i++) {
+                    CoffSection section = process.coff.getSection(i);
+                    if ((section.getFirstVPN() + section.getLength() - 1) < vpn)
+                        continue;
+                    section.loadPage(vpn - section.getFirstVPN(), ppn);
+                    translationEntry = new TranslationEntry(
+                            vpn, ppn, true, section.isReadOnly(), false, false);
+                    break;
+                }
+            } else {
+                translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
+            }
         }
         //System.out.println("*****Page loaded with processID: "+processID+" vpn: "+translationEntry.vpn+" , ppn: "+translationEntry.ppn);
 

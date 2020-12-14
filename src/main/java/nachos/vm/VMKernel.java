@@ -14,6 +14,7 @@ public class VMKernel extends UserKernel {
     /************* Start ********************/
     public static TLB tlb;
     public static PageTable pageTable;
+    public static SwapFile swapFile;
     /************* Start ********************/
 
     /**
@@ -33,6 +34,8 @@ public class VMKernel extends UserKernel {
             tlb = new TLB();
         if (pageTable == null)
             pageTable = new PageTable(Machine.processor().getNumPhysPages());
+        if(swapFile==null)
+            swapFile=new SwapFile();
         /************* End ********************/
     }
 
@@ -55,6 +58,7 @@ public class VMKernel extends UserKernel {
      */
     public void terminate() {
         super.terminate();
+        swapFile.terminate();
     }
 
     // dummy variables to make javac smarter
