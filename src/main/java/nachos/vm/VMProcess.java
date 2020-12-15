@@ -52,6 +52,71 @@ public class VMProcess extends UserProcess {
         super.unloadSections();
     }
 
+    @Override
+    public int readVirtualMemory(int vaddr, byte[] data, int offset,
+                                 int length) {
+        Lib.assertTrue(offset >= 0 && length >= 0 && offset + length <= data.length);
+
+        byte[] memory = Machine.processor().getMemory();
+
+        /*********Start*****************/
+        if (vaddr < 0)
+            return -1;
+
+        TranslationEntry entry = getTranslationEntry(vaddr);
+        entry.used = true;
+        int physicalAddr = getPhysicalAddress(entry, vaddr);
+        System.arraycopy(memory, physicalAddr, data, offset, length);
+        /*********End*****************/
+        return length;
+    }
+
+    @Override
+    public int writeVirtualMemory(int vaddr, byte[] data, int offset,
+                                  int length) {
+        Lib.assertTrue(offset >= 0 && length >= 0 && offset + length <= data.length);
+
+        byte[] memory = Machine.processor().getMemory();
+
+        /*********Start*****************/
+        if (vaddr < 0)
+            return -1;
+
+        TranslationEntry entry = getTranslationEntry(vaddr);
+        if(entry.readOnly) return -1;
+        entry.used = true;
+        entry.dirty = true;
+        int physicalAddr = getPhysicalAddress(entry, vaddr);
+
+        System.arraycopy(data, offset, memory, physicalAddr, length);
+        /*********End*****************/
+        return length;
+    }
+
+    public TranslationEntry getTranslationEntry(int vaddr){
+        int vpn = Processor.pageFromAddress(vaddr);
+        TranslationEntry entry = null;
+
+        while (entry == null) {
+            for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+                if (Machine.processor().readTLBEntry(i).valid &&
+                        Machine.processor().readTLBEntry(i).vpn == vpn) {
+                    entry = Machine.processor().readTLBEntry(i);
+                    break;
+                }
+            }
+
+            handleTLBMiss(vaddr);
+        }
+
+        return entry;
+    }
+
+    public int getPhysicalAddress(TranslationEntry entry, int vaddr) {
+        int pageOffset = Processor.offsetFromAddress(vaddr);
+        return  Processor.makeAddress(entry.ppn, pageOffset);
+    }
+
     /**
      * Handle a user exception. Called by
      * <tt>UserKernel.exceptionHandler()</tt>. The

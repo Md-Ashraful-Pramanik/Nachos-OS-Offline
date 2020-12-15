@@ -302,7 +302,7 @@ public class UserProcess {
             // store arguments in last page
             int entryOffset = (numPages - 1) * pageSize;
             /**************** Start *********************/
-            VMKernel.pageTable.handlePageFault(processId, Processor.pageFromAddress(entryOffset), this);
+            //VMKernel.pageTable.handlePageFault(processId, Processor.pageFromAddress(entryOffset), this, null);
             /**************** End ***********************/
             int stringOffset = entryOffset + args.length * 4;
 
@@ -551,8 +551,9 @@ public class UserProcess {
         processExecExitLock.release();
 
         System.out.println("***************active process count: "+activeProcess+" **************");
-        if(activeProcess==0)
+        if(activeProcess==0){
             Kernel.kernel.terminate();
+        }
 
         exitStatus.put(processId, a0);
 
@@ -657,8 +658,6 @@ public class UserProcess {
 
             default:
                 System.out.println("Unexpected exception: " + Processor.exceptionNames[cause]);
-                if(Processor.exceptionNames[cause].toString().startsWith("read-only"))
-                    Lib.assertNotReached();
                 Lib.debug(dbgProcess, "Unexpected exception: " +
                         Processor.exceptionNames[cause]);
                 System.out.println("************Unknown exception******************");

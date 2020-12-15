@@ -42,11 +42,13 @@ public class TLB {
             VMKernel.pageTable.replacePage(processID, tlbEntry);
 
         int vpn = Processor.pageFromAddress(vaddr);
-        if (!VMKernel.pageTable.containsPage(processID, vpn))
-            VMKernel.pageTable.handlePageFault(processID, vpn, vmProcess);
+        if (!VMKernel.pageTable.containsPage(processID, vpn)){
+            VMKernel.pageTable.handlePageFault(processID, vpn, vmProcess, tlbEntry);
+        }
 
         TranslationEntry missingEntry = VMKernel.pageTable.getPage(processID, vpn);
         processor.writeTLBEntry(tlbEntryNo, missingEntry);
+        //System.out.println("*****Page loaded In TLB with processID: "+processID+" vpn: "+missingEntry.vpn+" , ppn: "+missingEntry.ppn);
     }
 
     public int getTLBEntryNoToBeReplace() {

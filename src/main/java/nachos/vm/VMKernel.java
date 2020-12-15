@@ -57,8 +57,9 @@ public class VMKernel extends UserKernel {
      * Terminate this kernel. Never returns.
      */
     public void terminate() {
-        super.terminate();
+        System.out.println("Number of page fault: "+pageTable.pageFaultCount);
         swapFile.terminate();
+        super.terminate();
     }
 
     // dummy variables to make javac smarter
