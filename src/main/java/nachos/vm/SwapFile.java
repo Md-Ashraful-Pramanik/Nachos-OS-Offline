@@ -5,17 +5,21 @@ import nachos.machine.OpenFile;
 import nachos.threads.ThreadedKernel;
 
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.LinkedList;
 
 public class SwapFile {
     OpenFile swapFile;
     public LinkedList<Integer> freeSpace;
-    public HashMap<String, Integer> allocatedPosition;
+    public Hashtable<String, Integer> allocatedPosition;
+
+    public int pageSize;
 
     public SwapFile() {
         swapFile = ThreadedKernel.fileSystem.open("SwapSpace", true);
-        allocatedPosition = new HashMap<>();
+        allocatedPosition = new Hashtable<>();
         freeSpace = new LinkedList<>();
+        pageSize = Machine.processor().pageSize;
     }
 
     public int read(String key, byte[] buf, int offset) {
@@ -23,10 +27,8 @@ public class SwapFile {
             return -1;
         }
         int index = allocatedPosition.get(key);
-        int position = index * Machine.processor().pageSize;
-        swapFile.read(position, buf, offset, Machine.processor().pageSize);
-//        allocatedPosition.remove(key);
-//        freeSpace.add(position);
+        int position = index * pageSize;
+        swapFile.read(position, buf, offset, pageSize);
         return position;
     }
 
@@ -40,10 +42,10 @@ public class SwapFile {
             } else {
                 index = freeSpace.removeFirst();
             }
+            allocatedPosition.put(key, index);
         }
-        allocatedPosition.put(key, index);
-        int position = index * Machine.processor().pageSize;
-        swapFile.write(position, buf, offset, Machine.processor().pageSize);
+        int position = index * pageSize;
+        swapFile.write(position, buf, offset, pageSize);
         return 0;
     }
 
