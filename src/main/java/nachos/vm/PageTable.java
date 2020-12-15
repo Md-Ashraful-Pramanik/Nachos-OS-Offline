@@ -48,7 +48,7 @@ public class PageTable {
             key = getKey(processID, replacedEntry.vpn);
 
             if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty) {
-                System.out.println("Writing to swap file");
+                //System.out.println("Writing to swap file");
                 byte[] buf = Machine.processor().getMemory();
                 VMKernel.swapFile.write(getKey(processID, replacedEntry.vpn), buf,
                         replacedEntry.ppn * Machine.processor().pageSize);
@@ -62,7 +62,7 @@ public class PageTable {
         int value = VMKernel.swapFile.read(getKey(processID, vpn), buf,
                 ppn * Machine.processor().pageSize);
         if (value != -1) {
-            System.out.println("Reading from swap file");
+            //System.out.println("Reading from swap file");
             translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
         } else if (process.codeSectionPageCount > vpn) {
             for (int i = 0; i < process.coff.getNumSections(); i++) {
@@ -78,8 +78,8 @@ public class PageTable {
             translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
         }
 
-        System.out.println("*****Page loaded with processID: " + processID + " vpn: " +
-                translationEntry.vpn + " , ppn: " + translationEntry.ppn);
+        //System.out.println("*****Page loaded with processID: " + processID + " vpn: " +
+         //       translationEntry.vpn + " , ppn: " + translationEntry.ppn);
 
         synchronized (invertedPageTable) {
             if (invertedPageTable.size() == numPhyPages)

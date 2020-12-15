@@ -13,7 +13,7 @@ public class SwapFile {
     public HashMap<String, Integer> allocatedPosition;
 
     public SwapFile() {
-        swapFile = ThreadedKernel.fileSystem.open("fileforswapping", true);
+        swapFile = ThreadedKernel.fileSystem.open("SwapSpace", true);
         allocatedPosition = new HashMap<>();
         freeSpace = new LinkedList<>();
     }
@@ -22,8 +22,8 @@ public class SwapFile {
         if (!allocatedPosition.containsKey(key)) {
             return -1;
         }
-        int position = allocatedPosition.get(key);
-        position = position * Machine.processor().pageSize;
+        int index = allocatedPosition.get(key);
+        int position = index * Machine.processor().pageSize;
         swapFile.read(position, buf, offset, Machine.processor().pageSize);
 //        allocatedPosition.remove(key);
 //        freeSpace.add(position);
@@ -31,19 +31,19 @@ public class SwapFile {
     }
 
     public int write(String key, byte[] buf, int offset) {
-        int position;
+        int index;
         if (allocatedPosition.containsKey(key)) {
-            position = allocatedPosition.get(key);
+            index = allocatedPosition.get(key);
         } else {
             if (freeSpace.isEmpty()) {
-                position = allocatedPosition.size();
+                index = allocatedPosition.size();
             } else {
-                position = freeSpace.removeFirst();
+                index = freeSpace.removeFirst();
             }
         }
-        position = position * Machine.processor().pageSize;
+        allocatedPosition.put(key, index);
+        int position = index * Machine.processor().pageSize;
         swapFile.write(position, buf, offset, Machine.processor().pageSize);
-        allocatedPosition.put(key, position);
         return 0;
     }
 
@@ -51,11 +51,10 @@ public class SwapFile {
 
     }
 
-
     public void terminate() {
         if (swapFile != null) {
             swapFile.close();
-            ThreadedKernel.fileSystem.remove("fileforswapping");
+            ThreadedKernel.fileSystem.remove("SwapSpace");
         }
     }
 }
