@@ -31,7 +31,7 @@ public class PageTable {
 
     public void replacePage(int processID, TranslationEntry tlbEntry) {
         synchronized (invertedPageTable) {
-            if (invertedPageTable.contains(processID + "," + tlbEntry.vpn))
+            if (invertedPageTable.containsKey(processID + "," + tlbEntry.vpn))
                 invertedPageTable.replace(processID + "," + tlbEntry.vpn, tlbEntry);
         }
     }
@@ -43,12 +43,12 @@ public class PageTable {
         int ppn; /// ppn => the physical page number where we load new page
         String key = "";
 
-        if (invertedPageTable.size() == numPhyPages) {
+        if (invertedPageTable.size() >= numPhyPages) {
             ppn = replacedEntry.ppn; /// ppn => the physical page number where we load new page
             key = getKey(processID, replacedEntry.vpn);
 
             if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty) {
-                //System.out.println("Writing to swap file");
+                System.out.println("Writing to swap file");
                 byte[] buf = Machine.processor().getMemory();
                 VMKernel.swapFile.write(getKey(processID, replacedEntry.vpn), buf,
                         replacedEntry.ppn * Machine.processor().pageSize);
@@ -60,9 +60,9 @@ public class PageTable {
 
         byte[] buf = Machine.processor().getMemory();
         int value = VMKernel.swapFile.read(getKey(processID, vpn), buf,
-                ppn * Machine.processor().pageSize);
+                ppn * Processor.pageSize);
         if (value != -1) {
-            //System.out.println("Reading from swap file");
+            System.out.println("Reading from swap file");
             translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
         } else if (process.codeSectionPageCount > vpn) {
             for (int i = 0; i < process.coff.getNumSections(); i++) {
@@ -76,13 +76,15 @@ public class PageTable {
             }
         } else {
             translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
+            Arrays.fill(Machine.processor().getMemory(), ppn * Processor.pageSize,
+                    (ppn + 1) * Processor.pageSize, (byte) 0);
         }
 
         //System.out.println("*****Page loaded with processID: " + processID + " vpn: " +
-         //       translationEntry.vpn + " , ppn: " + translationEntry.ppn);
+        //       translationEntry.vpn + " , ppn: " + translationEntry.ppn);
 
         synchronized (invertedPageTable) {
-            if (invertedPageTable.size() == numPhyPages)
+            if (invertedPageTable.size() >= numPhyPages)
                 invertedPageTable.remove(key);
             invertedPageTable.put(getKey(processID, vpn), translationEntry);
         }

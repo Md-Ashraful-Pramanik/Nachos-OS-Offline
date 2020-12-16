@@ -29,7 +29,7 @@ public class TLB {
         TranslationEntry tlbEntry;
         for (int i = 0; i < tlbSize; i++) {
             tlbEntry = processor.readTLBEntry(i);
-            if(tlbEntry.valid && !tlbEntry.readOnly && tlbEntry.dirty)
+            if (tlbEntry.valid && !tlbEntry.readOnly && tlbEntry.dirty)
                 VMKernel.pageTable.replacePage(processID, tlbEntry);
         }
     }
@@ -42,7 +42,7 @@ public class TLB {
             VMKernel.pageTable.replacePage(processID, tlbEntry);
 
         int vpn = Processor.pageFromAddress(vaddr);
-        if (!VMKernel.pageTable.containsPage(processID, vpn)){
+        if (!VMKernel.pageTable.containsPage(processID, vpn)) {
             VMKernel.pageTable.handlePageFault(processID, vpn, vmProcess, tlbEntry);
         }
 

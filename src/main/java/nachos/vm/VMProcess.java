@@ -83,7 +83,7 @@ public class VMProcess extends UserProcess {
             return -1;
 
         TranslationEntry entry = getTranslationEntry(vaddr);
-        if(entry.readOnly) return -1;
+        if (entry.readOnly) return -1;
         entry.used = true;
         entry.dirty = true;
         int physicalAddr = getPhysicalAddress(entry, vaddr);
@@ -93,7 +93,7 @@ public class VMProcess extends UserProcess {
         return length;
     }
 
-    public TranslationEntry getTranslationEntry(int vaddr){
+    public TranslationEntry getTranslationEntry(int vaddr) {
         int vpn = Processor.pageFromAddress(vaddr);
         TranslationEntry entry = null;
 
@@ -114,7 +114,7 @@ public class VMProcess extends UserProcess {
 
     public int getPhysicalAddress(TranslationEntry entry, int vaddr) {
         int pageOffset = Processor.offsetFromAddress(vaddr);
-        return  Processor.makeAddress(entry.ppn, pageOffset);
+        return Processor.makeAddress(entry.ppn, pageOffset);
     }
 
     /**

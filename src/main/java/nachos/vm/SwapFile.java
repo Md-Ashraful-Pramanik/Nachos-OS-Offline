@@ -49,7 +49,7 @@ public class SwapFile {
         return 0;
     }
 
-    public void freeSpaceForAProcess(int processID){
+    public void freeSpaceForAProcess(int processID) {
 
     }
 
