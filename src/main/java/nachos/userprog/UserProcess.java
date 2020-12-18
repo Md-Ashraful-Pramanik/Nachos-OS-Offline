@@ -370,7 +370,7 @@ public class UserProcess {
         return true;
     }
 
-//
+    //
 //    public void allocatePages() {
 //        /*********Start*****************/
 //        if (UserKernel.freePages.size() > numPages) {
