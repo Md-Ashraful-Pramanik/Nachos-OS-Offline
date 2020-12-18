@@ -127,7 +127,7 @@ public class PageTable {
         boolean found = VMKernel.swapFile.read(getKey(processID, vpn), newPPN);
 
         if (!found) {
-            if (process.codeSectionPageCount > vpn) {
+            if (process.coffSectionPageCount > vpn) {
                 for (int i = 0; i < process.coff.getNumSections(); i++) {
                     CoffSection section = process.coff.getSection(i);
                     if ((section.getFirstVPN() + section.getLength()) > vpn) {

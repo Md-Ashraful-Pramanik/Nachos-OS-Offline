@@ -13,7 +13,7 @@ import java.util.Arrays;
 public class VMProcess extends UserProcess {
 
     public static Lock lock = new Lock();
-    byte[] mem = null;
+//    byte[] mem = null;
 
     /**
      * Allocate a new process.

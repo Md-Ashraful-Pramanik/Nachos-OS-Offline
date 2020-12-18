@@ -30,12 +30,9 @@ public class UserProcess {
     /**
      * Allocate a new process.
      */
-    public int maximumVirtualMemorySize;
-    public boolean isPageAllocated = false;
-
 
     public int processID = -1;
-    public int codeSectionPageCount;
+    public int coffSectionPageCount;
     //handling graph of processes
     public Vector<UserProcess> childProcesses = new Vector<>();
     public UserProcess parentProcess = null;
@@ -267,7 +264,7 @@ public class UserProcess {
             numPages += section.getLength();
         }
         /**************** Start *********************/
-        codeSectionPageCount = numPages;
+        coffSectionPageCount = numPages;
         //System.out.println("Number of page in code section: "+codeSectionPageCount);
         /**************** End *********************/
 
