@@ -39,11 +39,23 @@ public class TLB {
         TranslationEntry missingEntry = VMKernel.pageTable.getPage(
                 processID, vpn, vmProcess, replacedEntry);
 
-        VMKernel.pageTable.loadPageInTLB(processID, tlbEntryNo, missingEntry);
-        System.out.println("*****Page loaded In TLB with processID: "+
-                processID+" vpn: "+missingEntry.vpn+" , ppn: "+
-                missingEntry.ppn+", replaced vpn: "+replacedEntry.vpn);
+        VMKernel.pageTable.loadPageInTLB(processID, getTLBEntryNo(replacedEntry), missingEntry);
+
+//        System.out.println("*****Page loaded In TLB with processID: " +
+//                processID + " vpn: " + missingEntry.vpn + " , ppn: " +
+//                missingEntry.ppn + ", replaced vpn: " + replacedEntry.vpn);
+
         VMKernel.pageTable.sanityCheck2(vmProcess.processID, "after tlb");
+    }
+
+    public int getTLBEntryNo(TranslationEntry tlbEntry){
+        for (int i = 0; i < tlbSize; i++) {
+            TranslationEntry entry = processor.readTLBEntry(i);
+
+            if(entry.ppn == tlbEntry.ppn && entry.vpn == tlbEntry.vpn)
+                return i;
+        }
+        return 0;
     }
 
     public int getTLBEntryNoToBeReplace() {
@@ -54,7 +66,7 @@ public class TLB {
 
         for (int i = 0; i < tlbSize; i++) {
             tlbEntry = processor.readTLBEntry(i);
-            if (!tlbEntry.valid){
+            if (!tlbEntry.valid) {
                 return i;
             }
             if (!tlbEntry.dirty && !tlbEntry.used)

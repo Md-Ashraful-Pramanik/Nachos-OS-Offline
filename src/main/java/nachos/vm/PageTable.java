@@ -77,6 +77,7 @@ public class PageTable {
 
     public void loadPageInTLB(int processID, int tlbEntryNo, TranslationEntry tlbEntry) {
         processor.writeTLBEntry(tlbEntryNo, tlbEntry);
+        //System.out.println("Write in tlb position: "+tlbEntryNo+" vpn: "+tlbEntry.vpn);
         setPhysicalPage(processID, tlbEntry.vpn, tlbEntry.ppn);
     }
 
@@ -92,6 +93,7 @@ public class PageTable {
 
     public void handlePageFault(int processID, int vpn, UserProcess process,
                                 TranslationEntry tlbEntryToBeReplaced) {
+
         VMKernel.pageTable.sanityCheck2(processID, "before page fault");
         pageFaultCount++;
 
@@ -100,14 +102,24 @@ public class PageTable {
         String replacedEntryKey = "";
         if (invertedPageTable.size() >= numPhyPages) {
 //            if (tlbEntryToBeReplaced.valid)
-                replacedEntry = tlbEntryToBeReplaced;
+            replacedEntry = tlbEntryToBeReplaced;
 //            else
 //                replacedEntry = getPageKeyToBeReplace(processID);
 
             newPPN = replacedEntry.ppn;
             replacedEntryKey = getKey(processID, replacedEntry.vpn);
+
+            if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty)
+                VMKernel.swapFile.write(replacedEntryKey, replacedEntry.ppn);
+            else {
+                TranslationEntry replacedEntry2 = invertedPageTable.get(replacedEntryKey);
+                if (replacedEntry2 != null && !replacedEntry2.readOnly && replacedEntry2.dirty)
+                    VMKernel.swapFile.write(replacedEntryKey, replacedEntry2.ppn);
+            }
+
         } else
             newPPN = invertedPageTable.size();
+
 
         TranslationEntry missingEntry = new TranslationEntry(
                 vpn, newPPN, true, false, false, false);
@@ -135,17 +147,14 @@ public class PageTable {
         //       missingEntry.vpn + " , ppn: " + missingEntry.ppn);
 
         // synchronized (invertedPageTable){
+
         if (invertedPageTable.size() >= numPhyPages) {
-            if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty)
-                VMKernel.swapFile.write(replacedEntryKey, replacedEntry.ppn);
-            else {
-                replacedEntry = invertedPageTable.get(replacedEntryKey);
-                if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty)
-                    VMKernel.swapFile.write(replacedEntryKey, replacedEntry.ppn);
-            }
+            //System.out.println("Remove page from PageTable ppn: " + newPPN + " key: " + replacedEntryKey);
             invertedPageTable.remove(replacedEntryKey);
             pages.remove(replacedEntryKey);
         }
+
+        //System.out.println("Add page from PageTable vpn: " + missingEntry.vpn+" ppn: "+missingEntry.ppn);
         invertedPageTable.put(getKey(processID, vpn), missingEntry);
         pages.put(getKey(processID, vpn), getPhysicalPages(missingEntry.ppn));
         //}
@@ -177,20 +186,21 @@ public class PageTable {
     }
 
     public void sanityCheck2(int processID, String msg) {
-        for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
-            TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
-
-            if (tlbEntry.valid) {
-                if (!pages.containsKey(getKey(processID, tlbEntry.vpn))) {
-                    System.out.println("########### Failed => " + msg);
-                } else if (!tlbEntry.dirty){
-                    byte[] bytes = getPhysicalPages(tlbEntry.ppn);
-                    if (!Arrays.equals(bytes, pages.get(getKey(processID, tlbEntry.vpn)))) {
-                        System.out.println("########## Mem Failed => " + msg);
-                    }
-                }
-            }
-        }
+//        for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+//            TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
+//
+//            if (tlbEntry.valid) {
+//                if (!pages.containsKey(getKey(processID, tlbEntry.vpn))) {
+//                    System.out.println("########### Failed => " + msg);
+//                    System.out.println(tlbEntry.vpn);
+//                } else if (!tlbEntry.dirty) {
+//                    byte[] bytes = getPhysicalPages(tlbEntry.ppn);
+//                    if (!Arrays.equals(bytes, pages.get(getKey(processID, tlbEntry.vpn)))) {
+//                        System.out.println("########## Mem Failed => " + msg);
+//                    }
+//                }
+//            }
+//        }
     }
 
     public TranslationEntry getPageKeyToBeReplace(int processID) {

@@ -153,9 +153,9 @@ public class VMProcess extends UserProcess {
     }
 
     public void handleTLBMiss(int vaddr) {
-        lock.acquire();
+        boolean status = Machine.interrupt().disable();
         VMKernel.tlb.handleMiss(vaddr, processID, this);
-        lock.release();
+        Machine.interrupt().restore(status);
     }
 
     private static final int pageSize = Processor.pageSize;

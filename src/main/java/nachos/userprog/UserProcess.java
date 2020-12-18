@@ -485,7 +485,7 @@ public class UserProcess {
     private int handleExec(int a0, int a1, int a2) {
         //System.out.println("********NO of FREE PAGES: "+ UserKernel.freePages.size() + " *********");
         /*********Start*****************/
-        String programName = readVirtualMemoryString(a0, 1023);
+        String programName = readVirtualMemoryString(a0, 50);
         UserProcess process = newUserProcess();
         //System.out.println("Argument Count: " + a1);
         //System.out.println("Argument Starting address: " + a2);
@@ -497,7 +497,7 @@ public class UserProcess {
         String[] args = new String[a1];
         for (int i = 0; i < a1; i++) {
             int argAddress = Lib.bytesToInt(data, i*4);
-            args[i] = readVirtualMemoryString(argAddress, 1024);
+            args[i] = readVirtualMemoryString(argAddress, 50);
             //System.out.println("User process: "+args[i]);
             //System.out.println(args[i]);
             //System.out.println(args[i].length());

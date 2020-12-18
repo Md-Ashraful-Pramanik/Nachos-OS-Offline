@@ -55,6 +55,14 @@ int main(int argc, char* argv[])
     printf("Return for join on pid 3 : %d\n", num);
     printf("\n------------END CHECKING INVALID JOIN CALLS--------------\n");
 
+    printf("---------------EXEC matmult.coff---------------\n");
+    char** args;
+    int matmalPId = exec("matmult.coff",0,args);
+    int status = 0;
+    printf("---------------WAITING FOR matmult.coff---------------\n\n");
+    status = join(matmalPId, &status);
+    printf("\n---------------JOINING FROM matmult.coff---------------\n");
+
     printf("\n-------------TRY TO HALT IN ECHO-------------------------\n");
     halt();
     printf("\n-------------IN ECHO NOT HALTING-------------------------\n");

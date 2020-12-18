@@ -38,7 +38,7 @@ public class SwapFile {
         byte[] bytes = swapSpace.get(key);
         System.arraycopy(bytes, 0, memory, offset, pageSize);
         
-        //System.out.println("Read: "+key);
+        //System.out.println("Read: "+key+" PPN: "+ppn);
         //System.out.println(new String(swapSpace.get(key)));
         return true;
 //        if (!allocatedPosition.containsKey(key)) {
