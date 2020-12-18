@@ -12,9 +12,9 @@ import java.util.Hashtable;
  */
 public class VMKernel extends UserKernel {
     /************* Start ********************/
-    public static TLB tlb;
-    public static PageTable pageTable;
-    public static SwapFile swapFile;
+    public static volatile TLB tlb;
+    public static volatile PageTable pageTable;
+    public static volatile SwapFile swapFile;
     /************* Start ********************/
 
     /**

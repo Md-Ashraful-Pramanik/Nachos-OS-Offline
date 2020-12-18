@@ -7,14 +7,23 @@ import nachos.userprog.UserProcess;
 import java.util.*;
 
 public class PageTable {
+
+    Processor processor;
+    int tlbSize;
     public int numPhyPages;
-    /*** Encode pid and vpn to get string ***/
     public Hashtable<String, TranslationEntry> invertedPageTable;
+    /*** Encode pid and vpn to get string ***/
+    public Hashtable<String, byte[]> pages;
     public int pageFaultCount = 0;
+    public static int pageSize;
 
     public PageTable(int numPhyPages) {
         this.numPhyPages = numPhyPages;
         invertedPageTable = new Hashtable<>(numPhyPages);
+        pages = new Hashtable<>(numPhyPages);
+        pageSize = Processor.pageSize;
+        processor = Machine.processor();
+        tlbSize = processor.getTLBSize();
     }
 
     public String getKey(int processID, int vpn) {
@@ -25,103 +34,204 @@ public class PageTable {
         return invertedPageTable.containsKey(getKey(processID, vpn));
     }
 
-    public TranslationEntry getPage(int processID, int vpn) {
-        return invertedPageTable.get(getKey(processID, vpn));
+    public void replacePage(int processID, TranslationEntry tlbEntry) {
+        //synchronized(invertedPageTable){
+        String key = getKey(processID, tlbEntry.vpn);
+        //if (invertedPageTable.containsKey(key)){
+        invertedPageTable.put(key, tlbEntry);
+        pages.put(key, getPhysicalPages(tlbEntry.ppn));
+        //}
+        //}
     }
 
-    public void replacePage(int processID, TranslationEntry tlbEntry) {
-        synchronized (invertedPageTable) {
-            if (invertedPageTable.contains(processID + "," + tlbEntry.vpn))
-                invertedPageTable.replace(processID + "," + tlbEntry.vpn, tlbEntry);
+    public void saveTLB(int processID) {
+        int tlbSize = Machine.processor().getTLBSize();
+        for (int i = 0; i < tlbSize; i++) {
+            TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
+            if (tlbEntry.valid)
+                replacePage(processID, tlbEntry);
         }
     }
 
-    public void handlePageFault(int processID, int vpn,
-                                UserProcess process, TranslationEntry replacedEntry) {
+    public void restoreTLB(int processID) {
+        int index = 0;
+        for (String key : invertedPageTable.keySet()) {
+            if (key.startsWith(processID + ",")) {
+                TranslationEntry entry = invertedPageTable.get(key);
+                entry.used = false;
+                Machine.processor().writeTLBEntry(index, entry);
+                setPhysicalPages(entry.ppn, pages.get(key));
+                index++;
+                if (index == Machine.processor().getTLBSize())
+                    return;
+            }
+        }
+    }
+
+
+    public void setPhysicalPage(int processID, int vpn, int ppn) {
+        int offset = ppn * pageSize;
+        byte[] memory = Machine.processor().getMemory();
+        System.arraycopy(pages.get(getKey(processID, vpn)), 0, memory, offset, pageSize);
+    }
+
+    public void loadPageInTLB(int processID, int tlbEntryNo, TranslationEntry tlbEntry) {
+        processor.writeTLBEntry(tlbEntryNo, tlbEntry);
+        setPhysicalPage(processID, tlbEntry.vpn, tlbEntry.ppn);
+    }
+
+    public TranslationEntry getPage(int processID, int vpn, UserProcess process,
+                                    TranslationEntry tlbEntryToBeReplaced) {
+        String key = getKey(processID, vpn);
+
+        if (!invertedPageTable.containsKey(key))
+            handlePageFault(processID, vpn, process, tlbEntryToBeReplaced);
+
+        return invertedPageTable.get(key);
+    }
+
+    public void handlePageFault(int processID, int vpn, UserProcess process,
+                                TranslationEntry tlbEntryToBeReplaced) {
+        VMKernel.pageTable.sanityCheck2(processID, "before page fault");
         pageFaultCount++;
 
-        int ppn; /// ppn => the physical page number where we load new page
-        String key = "";
+        TranslationEntry replacedEntry = null;
+        int newPPN;
+        String replacedEntryKey = "";
+        if (invertedPageTable.size() >= numPhyPages) {
+//            if (tlbEntryToBeReplaced.valid)
+                replacedEntry = tlbEntryToBeReplaced;
+//            else
+//                replacedEntry = getPageKeyToBeReplace(processID);
 
-        if (invertedPageTable.size() == numPhyPages) {
-            ppn = replacedEntry.ppn; /// ppn => the physical page number where we load new page
-            key = getKey(processID, replacedEntry.vpn);
-
-            if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty) {
-                //System.out.println("Writing to swap file");
-                byte[] buf = Machine.processor().getMemory();
-                VMKernel.swapFile.write(getKey(processID, replacedEntry.vpn), buf,
-                        replacedEntry.ppn * Machine.processor().pageSize);
-            }
+            newPPN = replacedEntry.ppn;
+            replacedEntryKey = getKey(processID, replacedEntry.vpn);
         } else
-            ppn = invertedPageTable.size();
+            newPPN = invertedPageTable.size();
 
-        TranslationEntry translationEntry = null;
+        TranslationEntry missingEntry = new TranslationEntry(
+                vpn, newPPN, true, false, false, false);
 
-        byte[] buf = Machine.processor().getMemory();
-        int value = VMKernel.swapFile.read(getKey(processID, vpn), buf,
-                ppn * Machine.processor().pageSize);
-        if (value != -1) {
-            //System.out.println("Reading from swap file");
-            translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
-        } else if (process.codeSectionPageCount > vpn) {
-            for (int i = 0; i < process.coff.getNumSections(); i++) {
-                CoffSection section = process.coff.getSection(i);
-                if ((section.getFirstVPN() + section.getLength()) > vpn) {
-                    section.loadPage(vpn - section.getFirstVPN(), ppn);
-                    translationEntry = new TranslationEntry(
-                            vpn, ppn, true, section.isReadOnly(), false, false);
-                    break;
+        boolean found = VMKernel.swapFile.read(getKey(processID, vpn), newPPN);
+
+        if (!found) {
+            if (process.codeSectionPageCount > vpn) {
+                for (int i = 0; i < process.coff.getNumSections(); i++) {
+                    CoffSection section = process.coff.getSection(i);
+                    if ((section.getFirstVPN() + section.getLength()) > vpn) {
+                        //System.out.println("PPN: "+ppn);
+                        section.loadPage(vpn - section.getFirstVPN(), newPPN);
+                        missingEntry.readOnly = section.isReadOnly();
+                        break;
+                    }
                 }
+            } else {
+                Arrays.fill(Machine.processor().getMemory(), newPPN * pageSize,
+                        (newPPN + 1) * pageSize, (byte) 0);
             }
-        } else {
-            translationEntry = new TranslationEntry(vpn, ppn, true, false, false, false);
         }
 
-        //System.out.println("*****Page loaded with processID: " + processID + " vpn: " +
-         //       translationEntry.vpn + " , ppn: " + translationEntry.ppn);
+        // System.out.println("*****Page loaded with processID: " + processID + " vpn: " +
+        //       missingEntry.vpn + " , ppn: " + missingEntry.ppn);
 
-        synchronized (invertedPageTable) {
-            if (invertedPageTable.size() == numPhyPages)
-                invertedPageTable.remove(key);
-            invertedPageTable.put(getKey(processID, vpn), translationEntry);
+        // synchronized (invertedPageTable){
+        if (invertedPageTable.size() >= numPhyPages) {
+            if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty)
+                VMKernel.swapFile.write(replacedEntryKey, replacedEntry.ppn);
+            else {
+                replacedEntry = invertedPageTable.get(replacedEntryKey);
+                if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty)
+                    VMKernel.swapFile.write(replacedEntryKey, replacedEntry.ppn);
+            }
+            invertedPageTable.remove(replacedEntryKey);
+            pages.remove(replacedEntryKey);
+        }
+        invertedPageTable.put(getKey(processID, vpn), missingEntry);
+        pages.put(getKey(processID, vpn), getPhysicalPages(missingEntry.ppn));
+        //}
+    }
+
+    public static byte[] getPhysicalPages(int ppn) {
+        int offset = ppn * pageSize;
+        byte[] memory = Machine.processor().getMemory();
+        byte[] bytes = new byte[pageSize];
+        System.arraycopy(memory, offset, bytes, 0, pageSize);
+        return bytes;
+    }
+
+    public static void setPhysicalPages(int ppn, byte[] bytes) {
+        int offset = ppn * pageSize;
+        byte[] memory = Machine.processor().getMemory();
+        System.arraycopy(bytes, 0, memory, offset, pageSize);
+    }
+
+    public void sanityCheck(int processID) {
+        for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+            TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
+
+            if (tlbEntry.valid) {
+                if (!invertedPageTable.containsKey(getKey(processID, tlbEntry.vpn)))
+                    System.out.println("#########################Failed");
+            }
         }
     }
 
-    public String getPageKeyToBeReplace() {
-        TranslationEntry tlbEntry;
+    public void sanityCheck2(int processID, String msg) {
+        for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+            TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
+
+            if (tlbEntry.valid) {
+                if (!pages.containsKey(getKey(processID, tlbEntry.vpn))) {
+                    System.out.println("########### Failed => " + msg);
+                } else if (!tlbEntry.dirty){
+                    byte[] bytes = getPhysicalPages(tlbEntry.ppn);
+                    if (!Arrays.equals(bytes, pages.get(getKey(processID, tlbEntry.vpn)))) {
+                        System.out.println("########## Mem Failed => " + msg);
+                    }
+                }
+            }
+        }
+    }
+
+    public TranslationEntry getPageKeyToBeReplace(int processID) {
+        TranslationEntry entry;
         Random random = new Random();
-        Vector<String> invalidValues = new Vector<>(numPhyPages);
         Vector<String> notUsedNotDirtyValues = new Vector<>(numPhyPages);
         Vector<String> notUsedValues = new Vector<>(numPhyPages);
+        HashSet<String> tlbEntryKeys = new HashSet<>();
+
+        for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
+            TranslationEntry tlbEntry = Machine.processor().readTLBEntry(i);
+            if (tlbEntry.valid)
+                tlbEntryKeys.add(getKey(processID, tlbEntry.vpn));
+        }
 
         Set<String> keySet = invertedPageTable.keySet();
         for (String key : keySet) {
-            tlbEntry = invertedPageTable.get(key);
-            if (!tlbEntry.valid)
-                invalidValues.add(key);
-            if (!tlbEntry.dirty && !tlbEntry.used)
+            if (tlbEntryKeys.contains(key))
+                continue;
+
+            entry = invertedPageTable.get(key);
+            if (!entry.dirty && !entry.used)
                 notUsedNotDirtyValues.add(key);
-            else if (!tlbEntry.used)
+            else if (!entry.used)
                 notUsedValues.add(key);
         }
 
-        if (invalidValues.size() != 0)
-            return invalidValues.get(random.nextInt(invalidValues.size()));
+        String key = "";
         if (notUsedNotDirtyValues.size() != 0)
-            return notUsedNotDirtyValues.get(random.nextInt(notUsedNotDirtyValues.size()));
+            key = notUsedNotDirtyValues.get(random.nextInt(notUsedNotDirtyValues.size()));
         if (notUsedValues.size() != 0)
-            return notUsedValues.get(random.nextInt(notUsedValues.size()));
+            key = notUsedValues.get(random.nextInt(notUsedValues.size()));
 
-        int r = random.nextInt(numPhyPages);
-
-        int i = 0;
-        for (String key : keySet) {
-            if (i == r)
-                return key;
-            i++;
+        if (key.length() > 0)
+            return invertedPageTable.get(key);
+        for (String k : keySet) {
+            if (!tlbEntryKeys.contains(k))
+                invertedPageTable.get(key);
         }
-        return "";
+
+        return invertedPageTable.get(keySet.toArray()[0]);
     }
 
 }

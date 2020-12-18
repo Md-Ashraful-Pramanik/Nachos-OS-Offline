@@ -34,7 +34,7 @@ public class UserProcess {
     public boolean isPageAllocated = false;
 
 
-    public int processId = -1;
+    public int processID = -1;
     public int codeSectionPageCount;
     //handling graph of processes
     public Vector<UserProcess> childProcesses = new Vector<>();
@@ -53,7 +53,7 @@ public class UserProcess {
     public static Lock processExecExitLock = new Lock();
 
     public UserProcess() {
-        this.processId = totalNumberOfProcesses;
+        this.processID = totalNumberOfProcesses;
         totalNumberOfProcesses++;
     }
 
@@ -158,22 +158,22 @@ public class UserProcess {
      */
     public int readVirtualMemory(int vaddr, byte[] data, int offset,
                                  int length) {
-        Lib.assertTrue(offset >= 0 && length >= 0 && offset + length <= data.length);
-
-        byte[] memory = Machine.processor().getMemory();
-
-        /*********Start*****************/
-        if (vaddr < 0)
-            return -1;
-
-        int vpn = Processor.pageFromAddress(vaddr);
-        VMKernel.pageTable.getPage(processId, vpn).used = true;
-        int pageOffset = Processor.offsetFromAddress(vaddr);
-        int physicalAddr = Processor.makeAddress(VMKernel.pageTable.getPage(processId, vpn).ppn, pageOffset);
-
-        System.arraycopy(memory, physicalAddr, data, offset, length);
-        /*********End*****************/
-        return length;
+//        Lib.assertTrue(offset >= 0 && length >= 0 && offset + length <= data.length);
+//
+//        byte[] memory = Machine.processor().getMemory();
+//
+//        /*********Start*****************/
+//        if (vaddr < 0)
+//            return -1;
+//
+//        int vpn = Processor.pageFromAddress(vaddr);
+//        VMKernel.pageTable.getPage(processID, vpn).used = true;
+//        int pageOffset = Processor.offsetFromAddress(vaddr);
+//        int physicalAddr = Processor.makeAddress(VMKernel.pageTable.getPage(processID, vpn).ppn, pageOffset);
+//
+//        System.arraycopy(memory, physicalAddr, data, offset, length);
+//        /*********End*****************/
+        return 0;
     }
 
     /**
@@ -205,27 +205,27 @@ public class UserProcess {
      */
     public int writeVirtualMemory(int vaddr, byte[] data, int offset,
                                   int length) {
-        Lib.assertTrue(offset >= 0 && length >= 0 && offset + length <= data.length);
-
-        byte[] memory = Machine.processor().getMemory();
-
-        /*********Start*****************/
-        if (vaddr < 0)
-            return -1;
-
-        int vpn = Processor.pageFromAddress(vaddr);
-        //System.out.println("ProcessID: "+processId+"vpn: "+vpn);
-        VMKernel.pageTable.getPage(processId, vpn).used = true;
-        if (VMKernel.pageTable.getPage(processId, vpn).readOnly)
-            return -1;
-        int pageOffset = Processor.offsetFromAddress(vaddr);
-        int physicalAddr = Processor.makeAddress(VMKernel.pageTable.getPage(processId, vpn).ppn, pageOffset);
-
-        System.arraycopy(data, offset, memory, physicalAddr, length);
-
-        VMKernel.pageTable.getPage(processId, vpn).dirty = true;
-        /*********End*****************/
-        return length;
+//        Lib.assertTrue(offset >= 0 && length >= 0 && offset + length <= data.length);
+//
+//        byte[] memory = Machine.processor().getMemory();
+//
+//        /*********Start*****************/
+//        if (vaddr < 0)
+//            return -1;
+//
+//        int vpn = Processor.pageFromAddress(vaddr);
+//        //System.out.println("processID: "+processID+"vpn: "+vpn);
+//        VMKernel.pageTable.getPage(processID, vpn).used = true;
+//        if (VMKernel.pageTable.getPage(processID, vpn).readOnly)
+//            return -1;
+//        int pageOffset = Processor.offsetFromAddress(vaddr);
+//        int physicalAddr = Processor.makeAddress(VMKernel.pageTable.getPage(processID, vpn).ppn, pageOffset);
+//
+//        System.arraycopy(data, offset, memory, physicalAddr, length);
+//
+//        VMKernel.pageTable.getPage(processID, vpn).dirty = true;
+//        /*********End*****************/
+        return 0;
     }
 
     /**
@@ -266,6 +266,10 @@ public class UserProcess {
             }
             numPages += section.getLength();
         }
+        /**************** Start *********************/
+        codeSectionPageCount = numPages;
+        //System.out.println("Number of page in code section: "+codeSectionPageCount);
+        /**************** End *********************/
 
         // make sure the argv array will fit in one page
         byte[][] argv = new byte[args.length][];
@@ -285,10 +289,6 @@ public class UserProcess {
         initialPC = coff.getEntryPoint();
 
         // next comes the stack; stack pointer initially points to top of it
-        /**************** Start *********************/
-        codeSectionPageCount = numPages;
-        //System.out.println("Number of page in code section: "+codeSectionPageCount);
-        /**************** End *********************/
         numPages += stackPages;
         initialSP = numPages * pageSize;
 
@@ -302,7 +302,7 @@ public class UserProcess {
             // store arguments in last page
             int entryOffset = (numPages - 1) * pageSize;
             /**************** Start *********************/
-            //VMKernel.pageTable.handlePageFault(processId, Processor.pageFromAddress(entryOffset), this, null);
+            //VMKernel.pageTable.handlePageFault(processID, Processor.pageFromAddress(entryOffset), this, null);
             /**************** End ***********************/
             int stringOffset = entryOffset + args.length * 4;
 
@@ -441,6 +441,7 @@ public class UserProcess {
         if(this.parentProcess!=null)
             return -1;
 
+        Kernel.kernel.terminate();
         Machine.halt();
 
         Lib.assertNotReached("Machine.halt() did not halt machine!");
@@ -515,17 +516,17 @@ public class UserProcess {
         process.parentProcess = this;
         this.childProcesses.add(process);
 
-        return process.processId;
+        return process.processID;
         /*********End*****************/
     }
 
-    private int handleJoin(int joinProcessId, int a1) {
-        if(joinProcessId<0)
+    private int handleJoin(int joinprocessID, int a1) {
+        if(joinprocessID<0)
             return -1;
 
         UserProcess joiningProcess = null;
         for (UserProcess u : childProcesses) {
-            if (u.processId == joinProcessId) {
+            if (u.processID == joinprocessID) {
                 joiningProcess = u;
             }
         }
@@ -541,7 +542,7 @@ public class UserProcess {
 
         childProcesses.remove(joiningProcess);
 
-        return exitStatus.remove(joinProcessId);
+        return exitStatus.remove(joinprocessID);
     }
 
     private int handleExit(int a0) {
@@ -555,7 +556,7 @@ public class UserProcess {
             Kernel.kernel.terminate();
         }
 
-        exitStatus.put(processId, a0);
+        exitStatus.put(processID, a0);
 
         //unloadSections();
         KThread.finish();

@@ -5,10 +5,16 @@ import nachos.threads.*;
 import nachos.userprog.*;
 import nachos.vm.*;
 
+import java.util.Arrays;
+
 /**
  * A <tt>UserProcess</tt> that supports demand-paging.
  */
 public class VMProcess extends UserProcess {
+
+    public static Lock lock = new Lock();
+    byte[] mem = null;
+
     /**
      * Allocate a new process.
      */
@@ -21,9 +27,14 @@ public class VMProcess extends UserProcess {
      * Called by <tt>UThread.saveState()</tt>.
      */
     public void saveState() {
-        super.saveState();
-        VMKernel.tlb.saveInPageTable(processId);
+
+        VMKernel.pageTable.sanityCheck2(processID, "before save");
+        VMKernel.pageTable.saveTLB(processID);
         VMKernel.tlb.flushTLB();
+//        mem = new byte[4096];
+//        System.arraycopy(Machine.processor().getMemory(), 0, mem, 0, 4096);
+
+        super.saveState();
     }
 
     /**
@@ -31,7 +42,14 @@ public class VMProcess extends UserProcess {
      * <tt>UThread.restoreState()</tt>.
      */
     public void restoreState() {
+        VMKernel.pageTable.restoreTLB(processID);
+//        if (mem != null && !Arrays.equals(mem, Machine.processor().getMemory())) {
+//            System.out.println("###########Not");
+//        }
+
         super.restoreState();
+
+        VMKernel.pageTable.sanityCheck2(processID, "after restore");
     }
 
     /**
@@ -83,7 +101,7 @@ public class VMProcess extends UserProcess {
             return -1;
 
         TranslationEntry entry = getTranslationEntry(vaddr);
-        if(entry.readOnly) return -1;
+        if (entry.readOnly) return -1;
         entry.used = true;
         entry.dirty = true;
         int physicalAddr = getPhysicalAddress(entry, vaddr);
@@ -93,28 +111,24 @@ public class VMProcess extends UserProcess {
         return length;
     }
 
-    public TranslationEntry getTranslationEntry(int vaddr){
+    public TranslationEntry getTranslationEntry(int vaddr) {
         int vpn = Processor.pageFromAddress(vaddr);
-        TranslationEntry entry = null;
 
-        while (entry == null) {
+        while (true) {
             for (int i = 0; i < Machine.processor().getTLBSize(); i++) {
                 if (Machine.processor().readTLBEntry(i).valid &&
                         Machine.processor().readTLBEntry(i).vpn == vpn) {
-                    entry = Machine.processor().readTLBEntry(i);
-                    break;
+                    return Machine.processor().readTLBEntry(i);
                 }
             }
 
             handleTLBMiss(vaddr);
         }
-
-        return entry;
     }
 
     public int getPhysicalAddress(TranslationEntry entry, int vaddr) {
         int pageOffset = Processor.offsetFromAddress(vaddr);
-        return  Processor.makeAddress(entry.ppn, pageOffset);
+        return Processor.makeAddress(entry.ppn, pageOffset);
     }
 
     /**
@@ -139,7 +153,9 @@ public class VMProcess extends UserProcess {
     }
 
     public void handleTLBMiss(int vaddr) {
-        VMKernel.tlb.loadPageInTLB(vaddr, processId, this);
+        lock.acquire();
+        VMKernel.tlb.handleMiss(vaddr, processID, this);
+        lock.release();
     }
 
     private static final int pageSize = Processor.pageSize;

@@ -18,58 +18,51 @@ public class TLB {
     }
 
     public void flushTLB() {
-        TranslationEntry tlbEntry;
         for (int i = 0; i < tlbSize; i++) {
-            tlbEntry = processor.readTLBEntry(i);
+            TranslationEntry tlbEntry = processor.readTLBEntry(i);
             tlbEntry.valid = false;
+            processor.writeTLBEntry(i, tlbEntry);
         }
     }
 
-    public void saveInPageTable(int processID) {
-        TranslationEntry tlbEntry;
-        for (int i = 0; i < tlbSize; i++) {
-            tlbEntry = processor.readTLBEntry(i);
-            if(tlbEntry.valid && !tlbEntry.readOnly && tlbEntry.dirty)
-                VMKernel.pageTable.replacePage(processID, tlbEntry);
-        }
-    }
+    public void handleMiss(int vaddr, int processID, VMProcess vmProcess) {
+        VMKernel.pageTable.sanityCheck2(vmProcess.processID, "before tlb");
 
-    public void loadPageInTLB(int vaddr, int processID, VMProcess vmProcess) {
         int tlbEntryNo = getTLBEntryNoToBeReplace();
-        TranslationEntry tlbEntry = processor.readTLBEntry(tlbEntryNo);
+        TranslationEntry replacedEntry = processor.readTLBEntry(tlbEntryNo);
 
-        if (tlbEntry.valid && !tlbEntry.readOnly && tlbEntry.dirty)
-            VMKernel.pageTable.replacePage(processID, tlbEntry);
+        if (replacedEntry.valid && !replacedEntry.readOnly && replacedEntry.dirty)
+            VMKernel.pageTable.replacePage(processID, replacedEntry);
 
         int vpn = Processor.pageFromAddress(vaddr);
-        if (!VMKernel.pageTable.containsPage(processID, vpn)){
-            VMKernel.pageTable.handlePageFault(processID, vpn, vmProcess, tlbEntry);
-        }
 
-        TranslationEntry missingEntry = VMKernel.pageTable.getPage(processID, vpn);
-        processor.writeTLBEntry(tlbEntryNo, missingEntry);
-        //System.out.println("*****Page loaded In TLB with processID: "+processID+" vpn: "+missingEntry.vpn+" , ppn: "+missingEntry.ppn);
+        TranslationEntry missingEntry = VMKernel.pageTable.getPage(
+                processID, vpn, vmProcess, replacedEntry);
+
+        VMKernel.pageTable.loadPageInTLB(processID, tlbEntryNo, missingEntry);
+        System.out.println("*****Page loaded In TLB with processID: "+
+                processID+" vpn: "+missingEntry.vpn+" , ppn: "+
+                missingEntry.ppn+", replaced vpn: "+replacedEntry.vpn);
+        VMKernel.pageTable.sanityCheck2(vmProcess.processID, "after tlb");
     }
 
     public int getTLBEntryNoToBeReplace() {
         TranslationEntry tlbEntry;
         Random random = new Random();
-        Vector<Integer> invalidValues = new Vector<>(tlbSize);
         Vector<Integer> notUsedNotDirtyValues = new Vector<>(tlbSize);
         Vector<Integer> notUsedValues = new Vector<>(tlbSize);
 
         for (int i = 0; i < tlbSize; i++) {
             tlbEntry = processor.readTLBEntry(i);
-            if (!tlbEntry.valid)
-                invalidValues.add(i);
+            if (!tlbEntry.valid){
+                return i;
+            }
             if (!tlbEntry.dirty && !tlbEntry.used)
                 notUsedNotDirtyValues.add(i);
             else if (!tlbEntry.used)
                 notUsedValues.add(i);
         }
 
-        if (invalidValues.size() != 0)
-            return invalidValues.get(random.nextInt(invalidValues.size()));
         if (notUsedNotDirtyValues.size() != 0)
             return notUsedNotDirtyValues.get(random.nextInt(notUsedNotDirtyValues.size()));
         if (notUsedValues.size() != 0)
