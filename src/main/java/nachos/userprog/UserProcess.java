@@ -558,6 +558,7 @@ public class UserProcess {
 
         exitStatus.put(processID, a0);
 
+        VMKernel.swapFile.freeSpaceForAProcess(processID);
         //unloadSections();
         KThread.finish();
         return 0;

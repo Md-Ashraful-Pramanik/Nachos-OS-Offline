@@ -46,7 +46,6 @@ public class VMProcess extends UserProcess {
 //        if (mem != null && !Arrays.equals(mem, Machine.processor().getMemory())) {
 //            System.out.println("###########Not");
 //        }
-
         super.restoreState();
 
         VMKernel.pageTable.sanityCheck2(processID, "after restore");
@@ -153,9 +152,9 @@ public class VMProcess extends UserProcess {
     }
 
     public void handleTLBMiss(int vaddr) {
-        boolean status = Machine.interrupt().disable();
+        lock.acquire();
         VMKernel.tlb.handleMiss(vaddr, processID, this);
-        Machine.interrupt().restore(status);
+        lock.release();
     }
 
     private static final int pageSize = Processor.pageSize;
